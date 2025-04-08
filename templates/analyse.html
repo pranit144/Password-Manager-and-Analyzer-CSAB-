@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse Password - Blockchain Password Manager with LLM Insights</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header styles */
+        header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        nav ul {
+            display: flex;
+            justify-content: center;
+            list-style: none;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        nav li {
+            flex: 1;
+            text-align: center;
+        }
+
+        nav a {
+            display: block;
+            padding: 15px 0;
+            color: #555;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            background-color: #f0f2f5;
+        }
+
+        nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        /* Card styles */
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Form styles */
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+        }
+
+        /* Toggle button */
+        .toggle-button {
+            position: absolute;
+            right: 10px;
+            top: 40px;
+            background: none;
+            border: none;
+            color: #3498db;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Password analysis styles */
+        .analysis-result {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .strength-meter {
+            margin: 20px 0;
+        }
+
+        .strength-bar {
+            height: 10px;
+            background-color: #eee;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .strength-indicator {
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .very-weak {
+            background-color: #e74c3c;
+            width: 20%;
+        }
+
+        .weak {
+            background-color: #e67e22;
+            width: 40%;
+        }
+
+        .medium {
+            background-color: #f1c40f;
+            width: 60%;
+        }
+
+        .strong {
+            background-color: #2ecc71;
+            width: 80%;
+        }
+
+        .very-strong {
+            background-color: #27ae60;
+            width: 100%;
+        }
+
+        .strength-text {
+            font-weight: 600;
+        }
+
+        .feedback-section {
+            margin-top: 20px;
+        }
+
+        .feedback-section h4 {
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .feedback-section ul {
+            padding-left: 20px;
+        }
+
+        .feedback-section li {
+            margin-bottom: 8px;
+        }
+
+        /* New styles for LLM insights */
+        .llm-badge {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .feedback-item {
+            margin-bottom: 12px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .feedback-item.issue {
+            background-color: #fff0f0;
+            border-left: 3px solid #e74c3c;
+        }
+
+        .feedback-item.tip {
+            background-color: #f0f8ff;
+            border-left: 3px solid #3498db;
+        }
+
+        /* Table styles */
+        table {
+            width: 100%;
+            border: 2px solid #059862;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        table th,
+        table td {
+            padding: 10px;
+            text-align: left;
+            border: 2px solid #059862;
+        }
+
+        table th {
+            background-color: #f9f9f9;
+            font-weight: 600;
+            color: #555;
+        }
+
+        table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* New style for first row */
+        table tbody tr {
+            background-color: #e8f4fc; /* Light blue background */
+        }
+
+        table tbody tr:hover {
+            background-color: #d1eafa; /* Slightly darker blue on hover */
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3498db;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Footer styles */
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            color: #777;
+            font-size: 14px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            nav ul {
+                flex-direction: column;
+            }
+
+            .toggle-button {
+                top: 38px;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Blockchain Password Manager <span class="llm-badge">with LLM Insights</span></h1>
+            <nav>
+                <ul>
+                    <li><a href="/">Add Password</a></li>
+                    <li><a href="/storage">View Passwords</a></li>
+                    <li><a href="/analyse" class="active">Analyse Password</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <section class="card">
+                <h2>Password Strength Analysis</h2>
+                <p>Our AI-powered analysis provides in-depth insights into your password's security.</p>
+                <form id="analyse-form">
+                    <div class="form-group">
+                        <label for="analyse-password">Enter Password to Analyse:</label>
+                        <input type="password" id="analyse-password" name="analyse-password" required>
+                        <button type="button" id="toggle-analyse-password" class="toggle-button">Show</button>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn">Analyse Password</button>
+                    </div>
+                </form>
+
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing your password...</p>
+                </div>
+
+                <div id="analysis-result" class="analysis-result" style="display: none;">
+                    <h3>AI Analysis Result</h3>
+                    <table id="single-password-analysis">
+                        <thead>
+                            <tr>
+                                <th>Password</th>
+                                <th>Strength</th>
+                                <th>Assessment</th>
+                                <th>AI Insights & Suggestions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="highlighted-row">
+                                <td id="password-value">*****</td>
+                                <td>
+                                    <div class="strength-bar">
+                                        <div id="strength-indicator" class="strength-indicator"></div>
+                                    </div>
+                                </td>
+                                <td id="strength-text">Medium</td>
+                                <td id="feedback-cell">
+                                    <div id="feedback-list">
+                                        <!-- Feedback items will be populated here -->
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Separate card for All Password Analysis -->
+            <section class="card">
+                <h2>All Password Analysis</h2>
+                <p>Analyze all your stored passwords to identify security risks across your accounts.</p>
+                <button id="analyse-all-btn" class="btn">Analyse All Stored Passwords</button>
+
+                <div id="all-passwords-loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing all passwords...</p>
+                </div>
+
+                <div id="all-passwords-analysis" style="display: none; margin-top: 20px;">
+                    <table id="password-analysis-table">
+                        <thead>
+                            <tr>
+                                <th>Service/Website</th>
+                                <th>Username/Email</th>
+                                <th>Strength</th>
+                                <th>Assessment</th>
+                                <th>AI Insights & Suggestions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="password-analysis-list">
+                            <!-- Analysis entries will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Blockchain Password Manager with LLM Insights - Local Demo</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const analyseForm = document.getElementById('analyse-form');
+            const togglePasswordBtn = document.getElementById('toggle-analyse-password');
+            const passwordInput = document.getElementById('analyse-password');
+            const analysisResultEl = document.getElementById('analysis-result');
+            const loadingEl = document.getElementById('loading');
+            const strengthIndicator = document.getElementById('strength-indicator');
+            const strengthText = document.getElementById('strength-text');
+            const feedbackList = document.getElementById('feedback-list');
+            const passwordValue = document.getElementById('password-value');
+
+            // Toggle password visibility
+            togglePasswordBtn.addEventListener('click', function() {
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    togglePasswordBtn.textContent = 'Hide';
+                } else {
+                    passwordInput.type = 'password';
+                    togglePasswordBtn.textContent = 'Show';
+                }
+            });
+
+            // Form submission
+            analyseForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const password = passwordInput.value;
+                if (!password) return;
+
+                // Display loading
+                loadingEl.style.display = 'block';
+                analysisResultEl.style.display = 'none';
+
+                // Display masked password in the table
+                const maskedPassword = password.replace(/./g, '*');
+                passwordValue.textContent = maskedPassword;
+
+                fetch('/api/analyse_password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: password
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading
+                    loadingEl.style.display = 'none';
+
+                    // Display the analysis result
+                    analysisResultEl.style.display = 'block';
+
+                    // Update strength indicator
+                    const percentage = (data.strength / 5) * 100;
+                    strengthIndicator.style.width = percentage + '%';
+
+                    // Set color based on strength
+                    if (data.strength <= 1) {
+                        strengthIndicator.className = 'strength-indicator very-weak';
+                    } else if (data.strength === 2) {
+                        strengthIndicator.className = 'strength-indicator weak';
+                    } else if (data.strength === 3) {
+                        strengthIndicator.className = 'strength-indicator medium';
+                    } else if (data.strength === 4) {
+                        strengthIndicator.className = 'strength-indicator strong';
+                    } else {
+                        strengthIndicator.className = 'strength-indicator very-strong';
+                    }
+
+                    // Update strength text
+                    strengthText.textContent = data.assessment;
+
+                    // Update feedback list with enhanced styling
+                    feedbackList.innerHTML = '';
+                    if (data.feedback.length === 0) {
+                        const div = document.createElement('div');
+                        div.className = 'feedback-item tip';
+                        div.textContent = 'Your password meets all security criteria!';
+                        feedbackList.appendChild(div);
+                    } else {
+                        data.feedback.forEach(item => {
+                            const div = document.createElement('div');
+
+                            // Determine if this is an issue or a tip
+                            if (item.startsWith('Issue:')) {
+                                div.className = 'feedback-item issue';
+                                div.textContent = item.substring(6).trim();
+                            } else if (item.startsWith('Tip:')) {
+                                div.className = 'feedback-item tip';
+                                div.textContent = item.substring(4).trim();
+                            } else {
+                                div.className = 'feedback-item';
+                                div.textContent = item;
+                            }
+
+                            feedbackList.appendChild(div);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingEl.style.display = 'none';
+                    alert('An error occurred while analyzing the password.');
+                });
+            });
+
+            // Analysis for all passwords
+            const analyseAllBtn = document.getElementById('analyse-all-btn');
+            const allPasswordsLoadingEl = document.getElementById('all-passwords-loading');
+            const allPasswordsAnalysisEl = document.getElementById('all-passwords-analysis');
+            const passwordAnalysisList = document.getElementById('password-analysis-list');
+
+            // Analyse all passwords button click handler
+            analyseAllBtn.addEventListener('click', function() {
+                // Show loading
+                allPasswordsLoadingEl.style.display = 'block';
+                allPasswordsAnalysisEl.style.display = 'none';
+
+                fetch('/api/analyse_all_passwords')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading
+                        allPasswordsLoadingEl.style.display = 'none';
+
+                        // Display the analysis results
+                        allPasswordsAnalysisEl.style.display = 'block';
+
+                        // Clear previous results
+                        passwordAnalysisList.innerHTML = '';
+
+                        if (data.length === 0) {
+                            passwordAnalysisList.innerHTML = '<tr><td colspan="5">No passwords stored yet.</td></tr>';
+                            return;
+                        }
+
+                        // Add each password analysis to the table
+                        data.forEach((item, index) => {
+                            const row = document.createElement('tr');
+
+                            // Add a class to the first row
+                            if (index === 0) {
+                                row.classList.add('highlighted-row');
+                            }
+
+                            // Create feedback HTML with enhanced styling
+                            let feedbackHtml = '';
+                            if (item.feedback.length === 0) {
+                                feedbackHtml = '<div class="feedback-item tip">Meets all security criteria!</div>';
+                            } else {
+                                feedbackHtml = '<div>';
+                                item.feedback.forEach(feedback => {
+                                    if (feedback.startsWith('Issue:')) {
+                                        feedbackHtml += `<div class="feedback-item issue">${escapeHtml(feedback.substring(6).trim())}</div>`;
+                                    } else if (feedback.startsWith('Tip:')) {
+                                        feedbackHtml += `<div class="feedback-item tip">${escapeHtml(feedback.substring(4).trim())}</div>`;
+                                    } else {
+                                        feedbackHtml += `<div class="feedback-item">${escapeHtml(feedback)}</div>`;
+                                    }
+                                });
+                                feedbackHtml += '</div>';
+                            }
+
+                            // Determine color class based on strength
+                           // Determine color class based on strength
+                            let strengthClass = '';
+                            if (item.strength <= 1) {
+                                strengthClass = 'very-weak';
+                            } else if (item.strength === 2) {
+                                strengthClass = 'weak';
+                            } else if (item.strength === 3) {
+                                strengthClass = 'medium';
+                            } else if (item.strength === 4) {
+                                strengthClass = 'strong';
+                            } else {
+                                strengthClass = 'very-strong';
+                            }
+
+                            // Create the table row HTML
+                            row.innerHTML = `
+                                <td>${escapeHtml(item.service)}</td>
+                                <td>${escapeHtml(item.username)}</td>
+                                <td>
+                                    <div class="strength-bar">
+                                        <div class="strength-indicator ${strengthClass}" style="width: ${(item.strength / 5) * 100}%"></div>
+                                    </div>
+                                </td>
+                                <td>${escapeHtml(item.assessment)}</td>
+                                <td>${feedbackHtml}</td>
+                            `;
+
+                            passwordAnalysisList.appendChild(row);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        allPasswordsLoadingEl.style.display = 'none';
+                        alert('An error occurred while analyzing passwords.');
+                    });
+            });
+
+            // Helper function to escape HTML for security
+            function escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+        });
+    </script>
+</body>
+</html>
