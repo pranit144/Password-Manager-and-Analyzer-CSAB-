@@ -1,69 +1,187 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Password Manager</title>
+    <meta charset="UTF-8">
+    <title>Secure Manager</title>
     <style>
+        :root { /* Define some variables for consistency */
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --danger-color: #dc3545;
+            --success-color: #28a745;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #6c757d;
+            --text-color: #212529;
+            --border-color: #ced4da;
+            --border-radius: 4px;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
         body {
-            width: 300px;
-            padding: 10px;
-            font-family: Arial, sans-serif;
+            width: 360px; /* Slightly wider */
+            padding: 0; /* Remove default padding */
+            margin: 0;
+            font-family: var(--font-family);
+            font-size: 14px;
+            background-color: #f0f2f5; /* Lighter background */
+            color: var(--text-color);
         }
-        .container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        input, button {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #4CAF50;
+        .container { display: flex; flex-direction: column; height: 100%; } /* Use full height */
+
+        /* Header */
+        .popup-header {
+            background-color: var(--primary-color);
             color: white;
-            cursor: pointer;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        button:hover {
-            background-color: #45a049;
+        .popup-header h2 { font-size: 1.1em; margin: 0; font-weight: 500; }
+        .popup-header #logout-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 4px 8px;
+            font-size: 0.8em;
+            border-radius: var(--border-radius);
+            cursor: pointer; transition: background-color 0.2s ease;
         }
-        .password-list {
-            max-height: 200px;
+        .popup-header #logout-btn:hover { background-color: rgba(255, 255, 255, 0.3); }
+
+        /* Content Area */
+        .content-area { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+
+        /* Login View */
+        #login-view { padding: 20px; background-color: white; border-radius: var(--border-radius); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        #login-view h2 { margin-bottom: 20px; text-align: center; color: var(--dark-gray);}
+        #login-view label { display: block; margin-bottom: 5px; font-weight: 500; }
+        #login-view input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-sizing: border-box; }
+        #login-view button { width: 100%; padding: 10px; background-color: var(--primary-color); color: white; border: none; border-radius: var(--border-radius); font-size: 1em; cursor: pointer; }
+        #login-view button:hover { background-color: #0056b3; }
+
+        /* Main View */
+        .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px;}
+        #current-domain { font-size: 0.85em; color: var(--dark-gray); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+        #search-input {
+             width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-sizing: border-box; font-size: 0.95em; margin-bottom: 10px;
+        }
+        #search-input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,.25); }
+
+        .password-list-container {
+            flex-grow: 1; /* Take remaining space */
+            max-height: 250px; /* Adjust max height */
             overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: white;
+            margin-bottom: 10px;
         }
+        .password-list { list-style: none; padding: 0; margin: 0; }
         .password-item {
-            padding: 5px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
+             padding: 10px 12px; border-bottom: 1px solid var(--medium-gray); display: flex; justify-content: space-between; align-items: center; gap: 10px;
+             transition: background-color 0.15s ease;
         }
-        .password-item:hover {
-            background-color: #f5f5f5;
+        .password-item:last-child { border-bottom: none; }
+        .password-item:hover { background-color: var(--light-gray); }
+        .item-info { flex-grow: 1; display: flex; flex-direction: column; line-height: 1.4; overflow: hidden; /* Prevent long text breaking layout */ }
+        .item-info strong { font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .item-info span { color: var(--dark-gray); font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .item-actions { flex-shrink: 0; display: flex; gap: 5px;} /* Prevent actions wrap */
+        .item-actions button {
+            font-size: 0.85em; padding: 4px 7px; background-color: var(--medium-gray); color: var(--text-color); border: 1px solid var(--border-color); border-radius: var(--border-radius); cursor: pointer;
         }
-        .hidden {
-            display: none;
+        .item-actions button:hover { background-color: #d3d9df; }
+
+        /* Add Form */
+        .add-form { border: 1px solid var(--border-color); padding: 15px; border-radius: var(--border-radius); background-color: white; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .add-form h3 { font-size: 1.05em; margin: 0 0 15px 0; text-align: center; color: var(--secondary-color); font-weight: 500; }
+        .add-form label { margin-bottom: 4px; font-size: 0.9em; font-weight: 500; }
+        .add-form input { padding: 9px; margin-bottom: 10px; font-size: 0.95em;}
+        .add-form .form-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        .add-form .form-buttons button { flex-grow: 1; padding: 9px; }
+        .btn { /* General button class for consistency */
+             border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 0.95em; font-weight: 500; transition: background-color 0.2s ease;
         }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-secondary { background-color: var(--secondary-color); color: white; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .btn-add-toggle { width: 100%; padding: 10px; margin-top: 5px; background-color: var(--success-color); } /* Style the main Add button */
+        .btn-add-toggle:hover { background-color: #218838; }
+
+        /* Status/Error Messages */
+        .status-message { padding: 8px 10px; margin-top: 10px; border-radius: var(--border-radius); text-align: center; font-size: 0.9em; border: 1px solid transparent; }
+        .status-error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .status-success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .status-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb;}
+
+        .hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Password Manager</h2>
-        <div id="login-form">
-            <input type="text" id="username" placeholder="Username">
-            <input type="password" id="password" placeholder="Password">
-            <button id="login-btn">Login</button>
-        </div>
-        <div id="main-content" class="hidden">
-            <div class="password-list" id="password-list">
-                <!-- Passwords will be listed here -->
+
+        <!-- Login View -->
+        <div id="login-view">
+             <!-- Header is static, shown always if needed -->
+            <div class="popup-header">
+                 <h2>Secure Login</h2>
+                 <!-- No logout button here -->
             </div>
-            <button id="add-password-btn">Add New Password</button>
-            <div id="add-password-form" class="hidden">
-                <input type="text" id="service" placeholder="Service/Website">
-                <input type="text" id="new-username" placeholder="Username">
-                <input type="password" id="new-password" placeholder="Password">
-                <button id="save-password-btn">Save</button>
+            <div class="content-area">
+                <div id="login-error" class="status-message status-error hidden"></div>
+                <label for="email">Email:</label>
+                <input type="email" id="email" placeholder="Enter your email" required>
+                <label for="masterPasswordLogin">Master Password:</label>
+                <input type="password" id="masterPasswordLogin" placeholder="Enter Master Password" required>
+                <button id="login-btn" class="btn btn-primary" style="margin-top: 10px;">Login</button>
+            </div>
+        </div>
+
+        <!-- Main Logged-In View -->
+        <div id="main-view" class="hidden">
+             <div class="popup-header">
+                 <h2>Credentials</h2>
+                 <button id="logout-btn">Logout</button>
+            </div>
+             <div class="content-area">
+                 <div class="main-header">
+                    <span id="current-domain" title="Current Tab Domain">Domain: N/A</span>
+                 </div>
+                <input type="search" id="search-input" placeholder="Filter by service name...">
+
+                <div id="status-indicator" class="status-message status-info hidden"></div>
+                <div class="password-list-container">
+                    <ul id="password-list">
+                        <!-- JS loads items here -->
+                         <li style="padding: 10px; text-align: center; color: #777; list-style: none;">Loading...</li>
+                    </ul>
+                </div>
+                <button id="add-password-btn" class="btn btn-secondary btn-add-toggle">+ Add New Credential</button>
+
+                <!-- Add/Edit Form -->
+                <div id="add-password-form" class="add-form hidden">
+                    <h3>Add New Credential</h3>
+                    <div id="save-error" class="status-message status-error hidden"></div>
+                    <label for="service">Service/Website:</label>
+                    <input type="text" id="service" placeholder="e.g., Google, Example.com" required>
+                    <label for="new-username">Username/Email:</label>
+                    <input type="text" id="new-username" placeholder="Your username or email" required>
+                    <label for="new-password">Password:</label>
+                    <input type="password" id="new-password" placeholder="Enter password" required>
+                    <label for="masterPasswordSave">Confirm Master Password:</label>
+                    <input type="password" id="masterPasswordSave" placeholder="Enter Master Password to save" required>
+                    <div class="form-buttons">
+                        <button id="save-password-btn" class="btn btn-primary">Encrypt & Save</button>
+                        <button type="button" id="cancel-add-btn" class="btn btn-secondary">Cancel</button> <!-- Explicit type="button" -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+    <!-- Scripts Included Below -->
+    <script src="crypto-helpers.js"></script>
     <script src="popup.js"></script>
 </body>
-</html> 
+</html>

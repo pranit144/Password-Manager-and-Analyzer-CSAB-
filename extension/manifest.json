@@ -1,15 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "Blockchain Password Manager",
-  "version": "1.0",
-  "description": "A secure password manager using blockchain technology",
+  "name": "Secure E2EE Password Manager",
+  "version": "1.1",
+  "description": "A secure password manager using E2EE and a Supabase backend.",
   "permissions": [
-    "storage",
+    "storage",    
     "activeTab",
-    "scripting"
+    "scripting",
+    "cookies"         
   ],
   "host_permissions": [
-    "http://localhost:5000/*"
+    "http://127.0.0.1:5000/*", 
+    "http://localhost:5000/*"   
+
   ],
   "action": {
     "default_popup": "popup.html",
@@ -30,4 +33,4 @@
       "js": ["content.js"]
     }
   ]
-} 
+}

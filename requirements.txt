@@ -4,5 +4,8 @@ google-generativeai==0.3.1
 python-dotenv==1.0.0
 Werkzeug==2.3.6
 flask-bcrypt==1.0.1
-cryptography==41.0.3
-flask-wtf==1.2.1
+cryptography==41.0.3 # Already present, good
+flask-wtf==1.2.1 # Already present, good
+flask-login # Add Flask-Login
+supabase
+argon2-cffi # Optional but recommended for KDF later
