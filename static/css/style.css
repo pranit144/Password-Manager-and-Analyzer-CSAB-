@@ -1,319 +1,874 @@
-/* static/style.css */
-
-/* --- Base & Variables --- */
-:root {
-    --primary-color: #007bff;
-    --secondary-color: #6c757d;
-    --success-color: #28a745;
-    --danger-color: #dc3545;
-    --warning-color: #ffc107;
-    --info-color: #17a2b8;
-    --light-color: #f8f9fa;
-    --dark-color: #343a40;
-    --text-color: #212529;
-    --muted-color: #6c757d;
-    --border-color: #dee2e6;
-    --body-bg: #f4f7f6; /* Slightly off-white */
-    --card-bg: #ffffff;
-    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-    --border-radius: 0.375rem; /* Bootstrap default */
-    --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    --box-shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+/* --- Reset and Base Styles --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
 body {
-    font-family: var(--font-family);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
-    color: var(--text-color);
-    background-color: var(--body-bg);
+    color: #333;
+    background-color: #f5f7fa; /* Consistent background */
     padding-bottom: 60px; /* Footer space */
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+    font-size: 16px; /* Base font size */
+}
+
+/* For login/register pages */
+.auth-body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .container {
-    max-width: 1140px; /* Wider container */
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 25px;
-    flex-grow: 1; /* Allows container to grow and push footer down */
+    padding: 20px;
 }
 
-/* --- Header & Navigation --- */
-header { margin-bottom: 35px; }
+header {
+    margin-bottom: 30px;
+}
 
 h1 {
-    color: var(--dark-color);
-    margin-bottom: 25px;
+    color: #2c3e50;
+    margin-bottom: 20px;
     text-align: center;
-    font-weight: 300; /* Lighter main heading */
-    font-size: 2.5rem;
+    font-size: 1.8em; /* Slightly larger */
 }
-h1 .llm-badge { font-size: 0.4em; vertical-align: middle; background-color: var(--info-color); margin-left: 15px;}
 
+h2 {
+    color: #2c3e50;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    text-align: center; /* Center align H2 */
+    font-size: 1.5em;
+}
+
+/* Specific h2 for auth pages */
+.auth-body h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+    font-size: 1.4em;
+    border-bottom: none; /* Remove border for auth titles */
+}
+
+
+h3 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-top: 25px;
+    font-size: 1.3em;
+}
+
+p {
+    color: #555;
+    margin-bottom: 20px;
+}
+
+/* --- Navigation --- */
 nav ul {
     display: flex;
     justify-content: center;
     list-style: none;
-    background-color: var(--card-bg);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     overflow: hidden;
     padding: 0;
-    margin-top: 10px;
-}
-nav li { flex: 1; text-align: center; }
-nav a {
-    display: block;
-    padding: 16px 0;
-    color: var(--secondary-color);
-    text-decoration: none;
-    transition: all 0.2s ease-in-out;
-    font-weight: 500;
-    border-bottom: 3px solid transparent;
-    font-size: 1.05rem;
-}
-nav a:hover {
-    background-color: var(--light-color);
-    color: var(--primary-color);
-    border-bottom-color: var(--border-color);
-}
-nav a.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-bottom-color: var(--primary-color);
-}
-nav a.active:hover {
-    background-color: #0056b3; /* Darker blue on hover */
+    margin-top: 20px; /* Add space above nav */
 }
 
-/* Logout Link */
-.header-controls {
-    position: relative; /* For positioning logout */
-    margin-bottom: -40px; /* Adjust to pull logout up */
-     height: 0; /* Prevent taking vertical space */
+nav li {
+    flex: 1;
+    text-align: center;
 }
+
+nav a {
+    display: block;
+    padding: 15px 0;
+    color: #555;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+}
+
+nav a:hover {
+    background-color: #f0f2f5;
+    border-bottom-color: #ddd;
+}
+
+nav a.active {
+    background-color: #e9f5ff;
+    color: #0056b3;
+    border-bottom-color: #007bff;
+}
+
+/* --- Logout Link --- */
 .logout-link {
-    position: absolute;
-    top: -55px; /* Adjust vertical position relative to h1 */
-    right: 20px;
-    color: var(--primary-color);
+    float: right;
+    margin: -45px 10px 0 0;
+    color: #007bff;
     text-decoration: none;
     font-weight: 500;
-    padding: 5px 10px;
-    border: 1px solid transparent;
-    border-radius: var(--border-radius);
-    transition: all 0.2s ease;
 }
+
 .logout-link:hover {
-    text-decoration: none;
-    background-color: rgba(0, 123, 255, 0.1);
-    border-color: rgba(0, 123, 255, 0.2);
-}
-.logout-link span {
-    font-size: 0.9em;
-    color: var(--muted-color);
+    text-decoration: underline;
 }
 
 /* --- Cards --- */
 .card {
-    background-color: var(--card-bg);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow-lg);
-    padding: 35px 40px;
-    margin-bottom: 35px;
-    border: 1px solid var(--border-color);
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    margin-bottom: 30px;
 }
-.card h2, .card h3 {
-    color: var(--dark-color);
-    margin-bottom: 25px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 12px;
-    font-weight: 400; /* Slightly lighter headings */
-}
-.card h3 { margin-top: 30px; font-size: 1.4rem; }
-.card p { color: var(--muted-color); margin-bottom: 25px; line-height: 1.7; }
 
 /* --- Forms --- */
-.form-group { margin-bottom: 25px; position: relative; }
-.form-group label {
+.form-group {
+    margin-bottom: 25px;
+    position: relative;
+}
+
+label {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: var(--secondary-color);
-    font-size: 0.95rem;
+    color: #555;
 }
-input[type="text"], input[type="password"], input[type="email"], input[type="search"] {
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="search"] { /* Added search type */
     width: 100%;
-    padding: 12px 18px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
     font-size: 1rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.3s ease;
     box-sizing: border-box;
-    background-color: #fff; /* Ensure bg color */
 }
+
+input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 5px;
+    appearance: none; /* Override default look */
+    margin-top: 8px;
+}
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #3498db;
+    border-radius: 50%;
+    cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #3498db;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+
 input:focus {
-    border-color: var(--primary-color);
+    border-color: #3498db; /* Consistent focus color */
     outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* Specific input styles for auth pages */
+.auth-body input[type="email"],
+.auth-body input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+.auth-body input:focus {
+    border-color: #80bdff;
+    outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
-.password-rules { font-size: 0.85rem; color: #6c757d; margin-top: 8px; }
 
-/* Buttons */
+
+/* --- Buttons --- */
 .btn {
-    display: inline-block; /* Allow side-by-side buttons */
+    color: white;
     border: none;
-    border-radius: var(--border-radius);
-    padding: 12px 28px;
+    border-radius: 4px;
+    padding: 12px 25px;
     font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: background-color 0.3s ease;
     font-weight: 500;
-    text-align: center;
-    vertical-align: middle;
-     margin-right: 10px; /* Space between buttons */
+    text-align: center; /* Ensure text is centered */
+    display: inline-block; /* Adjust display */
 }
-.btn:last-child { margin-right: 0; }
 
-.btn-primary { background-color: var(--primary-color); color: white; }
-.btn-primary:hover { background-color: #0056b3; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-.btn-primary:disabled { background-color: #a5c9e0; cursor: not-allowed; box-shadow: none; }
-
-.btn-secondary { background-color: var(--secondary-color); color: white; }
-.btn-secondary:hover { background-color: #5a6268; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-.btn-secondary:disabled { background-color: #adb5bd; cursor: not-allowed; box-shadow: none; }
-
-.btn-danger { background-color: var(--danger-color); color: white; }
-.btn-danger:hover { background-color: #c82333; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
-/* Password Toggle Button */
-.toggle-button {
-    position: absolute;
-    right: 1px; /* Align with input padding */
-    top: 50%; /* Center vertically relative to the input */
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    cursor: pointer;
-    font-size: 0.9rem;
-    padding: 12px; /* Make clickable area larger */
-    line-height: 1; /* Prevent extra height */
+.btn:disabled {
+    background-color: #a9cce3; /* Lighter disabled color */
+    cursor: not-allowed;
     opacity: 0.7;
-    transition: opacity 0.2s ease;
-}
-.toggle-button:hover { opacity: 1; }
-input[type="password"] + .toggle-button, input[type="text"] + .toggle-button {
-     top: calc(50% + 14px); /* Adjust if label is present */
-}
-label + input + .toggle-button { /* If label exists */
-     top: calc(50% + 14px);
-}
-.form-group > .toggle-button { /* Direct child for simpler cases */
-     top: 50%; transform: translateY(-50%);
-     padding: 12px;
 }
 
+.btn-primary { /* Default button style */
+    background-color: #3498db;
+}
+.btn-primary:hover:not(:disabled) {
+    background-color: #2980b9;
+}
+
+/* Login Page Button */
+.btn-login {
+    display: block;
+    width: 100%;
+    background-color: #007bff; /* Blue */
+    color: white;
+    padding: 12px 15px;
+}
+.btn-login:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+.btn-login:disabled {
+    background-color: #6c757d; /* Grayer disabled */
+}
+
+/* Register Page Button */
+.btn-register {
+    display: block;
+    width: 100%;
+    background-color: #28a745; /* Green */
+    color: white;
+    padding: 12px 15px;
+}
+.btn-register:hover:not(:disabled) {
+    background-color: #218838;
+}
+.btn-register:disabled {
+     background-color: #6c757d; /* Grayer disabled */
+ }
+
+/* Secondary Button */
+.btn-secondary {
+    background-color: #6c757d;
+}
+.btn-secondary:hover:not(:disabled) {
+    background-color: #5a6268;
+}
+
+/* Outline Button */
+.btn-outline-secondary {
+    background-color: transparent;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+}
+.btn-outline-secondary:hover:not(:disabled) {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Small Button */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
 
 /* --- Messages & Alerts --- */
-.message, .alert {
-    padding: 15px 20px;
-    border-radius: var(--border-radius);
-    margin: 20px 0;
+.message,
+.alert { /* Combine message and alert styles */
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 20px;
+    margin-bottom: 20px; /* Add bottom margin */
     font-size: 0.95rem;
     text-align: center;
+    display: none; /* Hidden by default */
     border: 1px solid transparent;
-    display: none; /* Hidden by default, JS adds class to show */
 }
-.message.show, .alert.show { display: block; } /* Use .show class to display */
 
-.alert-success, .message.success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
-.alert-danger, .message.error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
-.alert-warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
-.alert-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
-
-/* --- Tables --- */
-.table-container { overflow-x: auto; margin-top: 25px; border: 1px solid var(--border-color); border-radius: var(--border-radius); }
-.styled-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.95rem;
-    min-width: 600px; /* Prevent extreme shrinking */
+.message.success,
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+    display: block; /* Make visible */
 }
-.styled-table thead tr {
-    background-color: var(--primary-color);
-    color: #ffffff;
-    text-align: left;
-    font-weight: 600;
+
+.message.error,
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+    display: block; /* Make visible */
 }
-.styled-table th, .styled-table td { padding: 14px 18px; text-align: left; }
-.styled-table tbody tr { border-bottom: 1px solid var(--border-color); }
-.styled-table tbody tr:nth-of-type(even) { background-color: var(--light-color); }
-.styled-table tbody tr:last-of-type { border-bottom: 2px solid var(--primary-color); }
-.styled-table tbody tr:hover { background-color: #ddeeff; /* Light blue hover */ }
-.styled-table td { vertical-align: middle; }
-.styled-table td:last-child { white-space: nowrap; }
 
-/* Password cell styles */
-.password-cell span { display: inline-block; min-width: 80px; word-break: break-all; }
-.password-hidden { font-family: monospace; letter-spacing: 2px; color: var(--muted-color); }
-.password-cell .toggle-button { font-size: 0.85em; margin-left: 10px; padding: 2px 5px; vertical-align: middle; }
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border-color: #ffeeba;
+    display: block; /* Make visible */
+}
 
-/* --- Analysis Specific Styles --- */
-.analysis-result { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
-.strength-bar { height: 12px; background-color: #e9ecef; border-radius: 6px; overflow: hidden; margin: 8px 0; width: 100%; }
-.strength-indicator { height: 100%; width: 0%; transition: width 0.5s ease, background-color 0.5s ease; border-radius: 6px; }
-/* Color classes defined in analyse.html script already */
-.strength-text { font-weight: 600; display: block; margin-top: 5px; }
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-color: #bee5eb;
+    display: block; /* Make visible */
+}
 
-/* Feedback styles */
-.feedback-section { margin-top: 10px; }
-.feedback-item { margin-bottom: 8px; padding: 10px 15px; border-radius: var(--border-radius); font-size: 0.9rem; border-left: 4px solid; line-height: 1.5; }
-.feedback-item.issue { background-color: #f8d7da; border-left-color: var(--danger-color); color: #58151c; }
-.feedback-item.tip { background-color: #d1ecf1; border-left-color: var(--info-color); color: #0c5460; }
+/* Status message for tables/loading */
+.status-message {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+    font-size: 0.95em;
+}
+.error-message { /* Specific error style if needed */
+    color: #dc3545;
+    font-weight: bold;
+}
 
-.analysis-table td:nth-child(3) { min-width: 150px; } /* Strength bar column */
-.analysis-table td:last-child { min-width: 300px; } /* Feedback column */
-
-
-/* --- Loading Indicator --- */
-.loading-indicator { display: none; text-align: center; margin: 30px 0; }
-.spinner { border: 5px solid rgba(0, 0, 0, 0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--primary-color); animation: spin 1s linear infinite; display: inline-block; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-.loading-indicator p { margin-top: 15px; color: var(--muted-color); font-size: 1.1em; }
-.status-message { text-align: center; padding: 15px; color: var(--muted-color); font-style: italic; }
 
 /* --- Footer --- */
 footer {
     text-align: center;
-    padding: 25px 0;
-    margin-top: 40px;
-    color: var(--muted-color);
-    font-size: 0.9rem;
-    background-color: #e9ecef; /* Light background for footer */
-    border-top: 1px solid var(--border-color);
+    padding: 20px 0;
+    margin-top: 40px; /* Increased margin */
+    color: #777;
+    font-size: 14px;
+    border-top: 1px solid #eee;
+}
+
+/* --- Helper Classes --- */
+.text-center { text-align: center; }
+.mt-3 { margin-top: 1.5rem; }
+.link { color: #007bff; text-decoration: none; }
+.link:hover { text-decoration: underline; }
+
+/* --- Loading Spinner --- */
+.loading-indicator {
+    display: none;
+    text-align: center;
+    margin: 25px 0; /* Adjusted margin */
+}
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: #3498db;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.loading-indicator p {
+    margin-top: 10px;
+    color: #555;
+    font-size: 0.95em;
+}
+
+/* --- Page Specific: index.html --- */
+.password-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative; /* Needed for absolute positioning of toggle */
+}
+
+.password-input-group input[type="password"],
+.password-input-group input[type="text"] { /* Apply to text type when shown */
+    flex-grow: 1;
+    padding-right: 180px; /* Increased space for two buttons */
+}
+
+.password-input-group .toggle-button {
+    position: absolute;
+    right: 100px; /* Position left of generate button */
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #3498db;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 5px;
+}
+
+.password-input-group .generate-button {
+    position: absolute;
+    right: 10px; /* Position at the far right */
+    top: 50%;
+    transform: translateY(-50%);
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Generator Options Styles */
+.generator-options {
+    border: 1px dashed #ccc;
+    padding: 20px 25px; /* Increased padding */
+    margin-top: 20px; /* Adjusted margin */
+    margin-bottom: 25px;
+    border-radius: 4px;
+    background-color: #fdfdfd;
+}
+
+.generator-options h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em; /* Slightly larger */
+    color: #555;
+    font-weight: 600;
+    border-bottom: 1px solid #eee; /* Add separator */
+    padding-bottom: 8px;
+}
+
+.length-control {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px; /* Increased margin */
+}
+
+.length-control label {
+    margin-bottom: 0;
+    flex-basis: 100px;
+    flex-shrink: 0;
+    font-weight: 500; /* Match other labels */
+}
+
+.length-control input[type="range"] {
+    flex-grow: 1;
+    margin-top: 0; /* Remove default range margin */
+}
+
+.length-control .length-display {
+    font-weight: 600;
+    min-width: 30px; /* Wider display */
+    text-align: right;
+    font-size: 1.05em;
+    color: #3498db;
+}
+
+.char-options {
+    display: grid; /* Use grid for better alignment */
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive columns */
+    gap: 15px; /* Adjusted gap */
+}
+
+.option-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Increased gap */
+}
+
+.option-group label {
+    margin-bottom: 0;
+    font-weight: normal;
+    color: #333;
+    cursor: pointer;
+    font-size: 0.95em;
+}
+
+.option-group input[type="checkbox"] {
+    cursor: pointer;
+    margin-top: -1px;
+    width: 16px; /* Slightly larger */
+    height: 16px;
+}
+
+/* Password Strength Display Styles (index.html) */
+.password-strength-area {
+    margin-top: 15px; /* Consistent margin */
+    margin-bottom: 25px;
+    padding: 15px; /* Increased padding */
+    border-radius: 4px;
+    background-color: #f8f9fa; /* Light background */
+    border: 1px solid #e9ecef;
+    min-height: 70px; /* Increased height */
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    display: none; /* Hidden by default */
+}
+.password-strength-area.strength-0 { background-color: #f8d7da; border-color: #f5c6cb;} /* Very Weak */
+.password-strength-area.strength-1 { background-color: #fff3cd; border-color: #ffeeba;} /* Weak */
+.password-strength-area.strength-2 { background-color: #d1ecf1; border-color: #bee5eb;} /* Medium */
+.password-strength-area.strength-3 { background-color: #d4edda; border-color: #c3e6cb;} /* Strong */
+.password-strength-area.strength-4 { background-color: #c8e6c9; border-color: #a5d6a7;} /* Very Strong */
+
+.strength-meter-container {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Increased gap */
+    margin-bottom: 12px; /* Increased margin */
+}
+
+.strength-label {
+    font-weight: 600;
+    font-size: 1em; /* Larger label */
+    width: 110px; /* Wider label */
+    flex-shrink: 0;
+    color: #444;
+}
+
+.strength-bar {
+    height: 12px; /* Thicker bar */
+    background-color: #e9ecef;
+    border-radius: 6px; /* Rounded corners */
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.strength-indicator {
+    height: 100%;
+    width: 0%;
+    transition: width 0.4s ease, background-color 0.4s ease;
+    border-radius: 6px;
+}
+/* Strength Colors */
+.strength-indicator.very-weak { background-color: #dc3545; width: 10%; } /* Score 0 */
+.strength-indicator.weak { background-color: #fd7e14; width: 30%; }      /* Score 1 */
+.strength-indicator.medium { background-color: #ffc107; width: 55%; }    /* Score 2 */
+.strength-indicator.strong { background-color: #20c997; width: 80%; }    /* Score 3 */
+.strength-indicator.very-strong { background-color: #198754; width: 100%; } /* Score 4 */
+
+#password-strength-feedback {
+    font-size: 0.9em; /* Slightly larger feedback text */
+    color: #6c757d;
+    line-height: 1.5; /* Improved line spacing */
+}
+#password-strength-feedback ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 8px 0 0 0; /* Adjusted margin */
+}
+#password-strength-feedback li {
+    margin-bottom: 5px; /* Increased spacing */
+    padding-left: 15px; /* Indent feedback */
+    position: relative;
+}
+#password-strength-feedback li::before {
+    content: '•';
+    color: #3498db; /* Use theme color */
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+    top: 1px;
+}
+#password-strength-feedback li.warning { color: #856404; font-weight: 500;}
+#password-strength-feedback li.warning::before { color: #fd7e14; } /* Warning color bullet */
+#password-strength-feedback li.suggestion { color: #0c5460; }
+#password-strength-feedback li.suggestion::before { color: #198754; } /* Suggestion color bullet */
+
+
+/* --- Page Specific: login.html & register.html --- */
+.remember-me { /* Class added in HTML */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 25px;
+}
+.remember-me label {
+    margin-bottom: 0;
+    font-weight: normal;
+    color: #555;
+    cursor: pointer;
+}
+.remember-me input[type="checkbox"] {
+    width: auto;
+    margin-top: -1px;
+    cursor: pointer;
+}
+
+.password-rules { /* Used in register.html */
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: -10px;
+    margin-bottom: 15px;
+    display: block; /* Ensure it takes block space */
+    line-height: 1.4;
+}
+
+/* --- Page Specific: analyse.html --- */
+.llm-badge {
+    display: inline-block;
+    background-color: #17a2b8; /* Teal color */
+    color: white;
+    padding: 4px 9px; /* Slightly larger padding */
+    border-radius: 4px;
+    font-size: 0.8em; /* Slightly smaller font */
+    font-weight: 600; /* Bolder */
+    margin-left: 10px;
+    vertical-align: middle;
+    text-transform: uppercase; /* Uppercase for badge */
+    letter-spacing: 0.5px;
+}
+
+.analysis-result { /* For single password analysis */
+    margin-top: 30px;
+    padding-top: 25px; /* Increased padding */
+    border-top: 1px solid #eee;
+}
+
+/* Feedback styles (analyse.html) */
+.feedback-section {
+    margin-top: 10px; /* Give more space */
+    padding-left: 5px; /* Slight indent */
+}
+.feedback-item {
+    margin-bottom: 8px; /* More spacing */
+    padding: 8px 12px; /* More padding */
+    border-radius: 4px;
+    font-size: 0.95em; /* Larger font */
+    border-left: 4px solid; /* Thicker border */
+    line-height: 1.5;
+}
+.feedback-item.issue {
+    background-color: #f8d7da; /* Use alert colors */
+    border-left-color: #dc3545;
+    color: #721c24;
+}
+.feedback-item.tip {
+    background-color: #d1ecf1; /* Use alert colors */
+    border-left-color: #17a2b8; /* Teal */
+    color: #0c5460;
+}
+
+/* Analysis Table (analyse.html & storage.html potentially) */
+.analysis-table, /* Added shared class */
+.storage-table {  /* Added shared class */
     width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+    table-layout: fixed; /* Helps with column widths */
+    font-size: 0.95em; /* Slightly smaller table font */
 }
 
-/* --- Responsive Adjustments --- */
+.analysis-table th, .analysis-table td,
+.storage-table th, .storage-table td {
+    padding: 12px 15px; /* Consistent padding */
+    text-align: left;
+    border: 1px solid #ddd;
+    vertical-align: top; /* Align content top */
+    word-wrap: break-word;
+}
+
+.analysis-table th,
+.storage-table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    color: #555;
+    white-space: nowrap;
+}
+
+.analysis-table tr:nth-child(even),
+.storage-table tr:nth-child(even) {
+    background-color: #fdfdfd;
+}
+
+.analysis-table tr:hover,
+.storage-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Specific column widths for analyse.html table */
+.analysis-table th:nth-child(1) { width: 20%; } /* Service */
+.analysis-table th:nth-child(2) { width: 20%; } /* Username */
+.analysis-table th:nth-child(3) { width: 15%; } /* Strength Bar */
+.analysis-table th:nth-child(4) { width: 15%; } /* Assessment */
+.analysis-table th:nth-child(5) { width: 30%; } /* Feedback */
+
+.analysis-table .strength-bar { /* Strength bar within the table */
+    height: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 5px 0;
+    display: inline-block;
+    width: 95%; /* Slightly less than 100% for padding */
+}
+.analysis-table .strength-indicator { /* Use shared classes for color/width */
+    height: 100%;
+    width: 0%;
+    transition: width 0.5s ease, background-color 0.5s ease;
+    border-radius: 5px;
+}
+
+/* --- Page Specific: storage.html --- */
+.search-bar {
+    margin-bottom: 30px; /* Increased space */
+}
+/* Search input uses general input styles */
+
+.table-container {
+    overflow-x: auto; /* Keep horizontal scroll for tables */
+}
+/* Storage table uses .storage-table styles defined above */
+
+.password-cell span {
+    display: inline-block;
+    min-width: 100px; /* Increased space */
+    word-break: break-all; /* Prevent long passwords overflowing */
+    vertical-align: middle; /* Align with button */
+    line-height: 1.2; /* Adjust line height if needed */
+}
+.password-hidden {
+    font-family: 'Courier New', Courier, monospace; /* Monospace for hidden */
+    letter-spacing: 3px; /* Increased spacing */
+    color: #777;
+    font-size: 1.1em; /* Make dots slightly larger */
+}
+
+.password-cell .toggle-button { /* Specific toggle for password cell */
+    background: none;
+    border: none;
+    color: #3498db;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 10px;
+    padding: 3px 6px; /* Adjusted padding */
+    vertical-align: middle;
+    border: 1px solid transparent; /* Add border for alignment */
+    border-radius: 3px;
+}
+.password-cell .toggle-button:hover:not(:disabled) {
+    text-decoration: none;
+    background-color: #e9ecef;
+    border-color: #ced4da;
+}
+.password-cell .toggle-button:disabled {
+    color: #ccc;
+    cursor: default;
+    text-decoration: none;
+    background-color: transparent;
+    border-color: transparent;
+}
+
+
+/* --- Responsive Design --- */
 @media (max-width: 768px) {
+    body { font-size: 15px; } /* Slightly smaller base font on mobile */
     .container { padding: 15px; }
-    h1 { font-size: 2rem; }
-    nav ul { flex-direction: column; }
-    nav a { border-bottom: 1px solid var(--border-color); padding: 14px 0; }
-    nav a.active { border-bottom-color: var(--primary-color); }
-    .header-controls { margin-bottom: 0; height: auto; }
-    .logout-link { position: static; float: none; text-align: center; margin: 15px 0; display: block; }
-    .card { padding: 25px; }
-    .btn { padding: 10px 20px; font-size: 0.95rem; }
-    .styled-table { font-size: 0.9rem; min-width: 100%; } /* Allow shrinking */
-    .styled-table th, .styled-table td { padding: 10px 12px; }
-    .analysis-table { display: block; overflow-x: auto; } /* Enable horizontal scroll */
-}
+    h1 { font-size: 1.6em; }
+    h2 { font-size: 1.3em; }
+    h3 { font-size: 1.15em; }
 
-@media (max-width: 576px) {
-    .analysis-table td:last-child { min-width: 250px; } /* Adjust feedback width */
+    nav ul { flex-direction: column; }
+    nav a { border-bottom: 1px solid #eee; border-left: 3px solid transparent; } /* Add left border indicator */
+    nav a.active { border-bottom-color: #eee; border-left-color: #007bff; } /* Active uses left border */
+
+    .logout-link {
+        float: none;
+        text-align: center;
+        margin: 15px 0 0 0; /* Adjust margin */
+        display: block;
+    }
+
+    .card { padding: 20px; }
+
+    .password-input-group input[type="password"],
+    .password-input-group input[type="text"] {
+        padding-right: 130px; /* Adjust padding for smaller buttons */
+    }
+    .password-input-group .toggle-button { right: 85px; }
+    .password-input-group .generate-button { right: 10px; padding: 8px 10px; font-size: 0.9em; }
+
+    .length-control { flex-wrap: wrap; }
+    .length-control label { flex-basis: auto; width: 100%; margin-bottom: 5px; }
+    .char-options { grid-template-columns: 1fr 1fr; } /* Ensure two columns */
+
+    .strength-label { width: 80px; font-size: 0.9em;}
+
+    /* Make tables horizontally scrollable */
+    .analysis-table,
+    .storage-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap; /* Prevent wrapping within cells initially */
+        border: none; /* Remove table border for block display */
+    }
+    .analysis-table thead, .analysis-table tbody, .analysis-table tr,
+    .storage-table thead, .storage-table tbody, .storage-table tr {
+        display: block;
+    }
+    .analysis-table th, .analysis-table td,
+    .storage-table th, .storage-table td {
+        display: block; /* Stack cells vertically */
+        text-align: right; /* Align text to the right */
+        padding-left: 50%; /* Create space for label */
+        position: relative;
+        border-bottom: 1px solid #eee;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        white-space: normal; /* Allow content wrapping */
+        width: 100% !important; /* Override fixed widths */
+    }
+    .analysis-table td:last-child,
+    .storage-table td:last-child {
+        border-bottom: 2px solid #ccc; /* Thicker border for last cell */
+    }
+    .analysis-table th,
+    .storage-table th {
+        display: none; /* Hide table headers */
+    }
+    .analysis-table td::before,
+    .storage-table td::before { /* Add labels using pseudo-elements */
+        content: attr(data-label); /* Use data-label attribute (needs JS to add) */
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: bold;
+        color: #555;
+    }
+     /* Target specific cells for labels if JS isn't adding data-label */
+     .analysis-table td:nth-of-type(1)::before { content: "Service"; }
+     .analysis-table td:nth-of-type(2)::before { content: "Username"; }
+     .analysis-table td:nth-of-type(3)::before { content: "Strength"; }
+     .analysis-table td:nth-of-type(4)::before { content: "Assessment"; }
+     .analysis-table td:nth-of-type(5)::before { content: "Feedback"; }
+
+     .storage-table td:nth-of-type(1)::before { content: "Service"; }
+     .storage-table td:nth-of-type(2)::before { content: "Username"; }
+     .storage-table td:nth-of-type(3)::before { content: "Password"; }
+     .storage-table td:nth-of-type(4)::before { content: "Date Added"; }
+
+     /* Adjust feedback display in table */
+     .analysis-table td:nth-of-type(5) .feedback-item { font-size: 0.9em; padding: 6px 8px; margin-bottom: 4px; }
+
+     .password-cell { white-space: normal; } /* Allow password cell content to wrap */
+     .password-cell .toggle-button { margin-left: 5px; }
+
+
+    .auth-body { margin: 20px; padding: 20px; }
 }

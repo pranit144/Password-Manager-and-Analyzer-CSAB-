@@ -4,67 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Passwords - Secure Password Manager</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        /* Reset and base styles */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f5f7fa; padding-bottom: 60px; }
-        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
-        header { margin-bottom: 30px; }
-        h1 { color: #2c3e50; margin-bottom: 20px; text-align: center; }
-
-        /* Navigation */
-        nav ul { display: flex; justify-content: center; list-style: none; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); overflow: hidden; padding: 0; }
-        nav li { flex: 1; text-align: center; }
-        nav a { display: block; padding: 15px 0; color: #555; text-decoration: none; transition: all 0.3s ease; font-weight: 500; border-bottom: 3px solid transparent; }
-        nav a:hover { background-color: #f0f2f5; border-bottom-color: #ddd; }
-        nav a.active { background-color: #e9f5ff; color: #0056b3; border-bottom-color: #007bff; }
-
-        /* Logout Link */
-        .logout-link { float: right; margin: -45px 10px 0 0; color: #007bff; text-decoration: none; font-weight: 500; }
-        .logout-link:hover { text-decoration: underline; }
-
-        /* Card styles */
-        .card { background-color: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); padding: 30px; margin-bottom: 30px; }
-        h2 { color: #2c3e50; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-
-        /* Search bar */
-        .search-bar { margin-bottom: 25px; }
-        .search-bar input { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; box-sizing: border-box; }
-        .search-bar input:focus { border-color: #3498db; outline: none; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }
-
-        /* Table styles */
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
-        th { background-color: #f9fafb; font-weight: 600; color: #555; white-space: nowrap; }
-        tr:hover { background-color: #f5f7fa; }
-        td:last-child { white-space: nowrap; } /* Prevent date wrapping */
-
-        /* Password display & Toggle Button */
-        .password-cell span { display: inline-block; min-width: 80px; /* Ensure space */ word-break: break-all; /* Prevent long passwords overflowing */ }
-        .password-hidden { font-family: monospace; letter-spacing: 2px; color: #777; }
-        .toggle-button { background: none; border: none; color: #3498db; cursor: pointer; font-size: 0.9em; margin-left: 10px; padding: 2px 5px; vertical-align: middle; }
-        .toggle-button:hover { text-decoration: underline; }
-        .toggle-button:disabled { color: #ccc; cursor: default; text-decoration: none; }
-
-        /* Loading/Messages */
-        .status-message { text-align: center; padding: 20px; color: #666; font-style: italic; }
-        .error-message { color: #dc3545; font-weight: bold; }
-
-        /* Footer */
-        footer { text-align: center; padding: 20px 0; margin-top: 30px; color: #777; font-size: 14px; border-top: 1px solid #eee; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            nav ul { flex-direction: column; }
-            nav a { border-bottom: 1px solid #eee; }
-            nav a.active { border-bottom-color: #007bff; }
-            .logout-link { float: none; text-align: center; margin: 10px 0; display: block; }
-            th, td { font-size: 0.9em; }
-            .password-cell span { min-width: 60px; }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">

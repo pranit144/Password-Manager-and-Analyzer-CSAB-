@@ -4,110 +4,229 @@
     <meta charset="UTF-8">
     <title>Secure Manager</title>
     <style>
-        :root { /* Define some variables for consistency */
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --danger-color: #dc3545;
-            --success-color: #28a745;
+        /* --- Popup Specific Styles (Aligned with style.css theme) --- */
+        :root { /* Match theme colors */
+            --primary-color: #3498db; /* Main theme blue */
+            --secondary-color: #6c757d; /* Gray */
+            --danger-color: #dc3545; /* Red */
+            --success-color: #28a745; /* Green */
             --light-gray: #f8f9fa;
             --medium-gray: #e9ecef;
             --dark-gray: #6c757d;
-            --text-color: #212529;
-            --border-color: #ced4da;
+            --text-color: #333; /* Match base text */
+            --border-color: #ddd; /* Match input border */
             --border-radius: 4px;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match base font */
         }
         body {
-            width: 360px; /* Slightly wider */
-            padding: 0; /* Remove default padding */
+            width: 360px;
+            padding: 0;
             margin: 0;
             font-family: var(--font-family);
             font-size: 14px;
-            background-color: #f0f2f5; /* Lighter background */
+            background-color: #f5f7fa; /* Match base background */
             color: var(--text-color);
+            min-height: 150px; /* Minimum height */
+            max-height: 550px; /* Maximum height */
+            display: flex; /* Ensure container takes height */
         }
-        .container { display: flex; flex-direction: column; height: 100%; } /* Use full height */
+        .container { display: flex; flex-direction: column; width: 100%; height: 100%; }
 
         /* Header */
-        .popup-header { background-color: var(--primary-color); color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .popup-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px; /* Slightly less padding */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
         .popup-header h2 { font-size: 1.1em; margin: 0; font-weight: 500; }
-        .popup-header #logout-btn { background-color: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.5); padding: 4px 8px; font-size: 0.8em; border-radius: var(--border-radius); cursor: pointer; transition: background-color 0.2s ease; }
+        .popup-header #logout-btn {
+             background-color: rgba(255, 255, 255, 0.15);
+             color: white;
+             border: 1px solid rgba(255, 255, 255, 0.4);
+             padding: 4px 8px;
+             font-size: 0.8em;
+             border-radius: var(--border-radius);
+             cursor: pointer;
+             transition: background-color 0.2s ease;
+        }
         .popup-header #logout-btn:hover { background-color: rgba(255, 255, 255, 0.3); }
 
         /* Content Area */
-        .content-area { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; /* Allow content scroll if needed */ max-height: 500px; /* Limit popup height */}
+        .content-area {
+            padding: 15px;
+            flex-grow: 1; /* Takes remaining space */
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; /* Scroll if content overflows */
+            background-color: #fdfdfd; /* Slightly off-white */
+        }
 
         /* Login View */
-        #login-view { padding: 20px; background-color: white; border-radius: var(--border-radius); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        #login-view { height: 100%; display: flex; flex-direction: column; }
+        #login-view .content-area { background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: var(--border-radius); }
         #login-view h2 { margin-bottom: 20px; text-align: center; color: var(--dark-gray);}
         #login-view label { display: block; margin-bottom: 5px; font-weight: 500; }
-        #login-view input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-sizing: border-box; }
-        #login-view button { width: 100%; padding: 10px; background-color: var(--primary-color); color: white; border: none; border-radius: var(--border-radius); font-size: 1em; cursor: pointer; }
-        #login-view button:hover { background-color: #0056b3; }
+        #login-view input {
+            width: 100%;
+            padding: 10px 12px; /* Match general inputs */
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+            font-size: 0.95em;
+        }
+        #login-view input:focus {
+             border-color: var(--primary-color); /* Match focus */
+             outline: none;
+             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        #login-view button { /* Uses .btn below */
+             width: 100%;
+             margin-top: 10px;
+        }
 
         /* Main View */
-        .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px;}
+        .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 5px;}
         #current-domain { font-size: 0.85em; color: var(--dark-gray); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
-        #search-input { width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-sizing: border-box; font-size: 0.95em; margin-bottom: 10px; }
-        #search-input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,.25); }
+        #search-input {
+             width: 100%;
+             padding: 9px 12px;
+             border: 1px solid var(--border-color);
+             border-radius: var(--border-radius);
+             box-sizing: border-box;
+             font-size: 0.95em;
+             margin-bottom: 12px; /* Increased margin */
+        }
+        #search-input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }
 
-        .password-list-container { flex-grow: 1; max-height: 200px; /* Adjusted height for list */ overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: white; margin-bottom: 10px; }
+        .password-list-container {
+             flex-grow: 1;
+             min-height: 100px; /* Min height for list */
+             max-height: 250px; /* Max height */
+             overflow-y: auto;
+             border: 1px solid var(--border-color);
+             border-radius: var(--border-radius);
+             background-color: white;
+             margin-bottom: 12px; /* Increased margin */
+        }
         .password-list { list-style: none; padding: 0; margin: 0; }
-        .password-item { padding: 10px 12px; border-bottom: 1px solid var(--medium-gray); display: flex; justify-content: space-between; align-items: flex-start; /* Align items top */ gap: 10px; transition: background-color 0.15s ease; }
+        .password-item { padding: 10px 12px; border-bottom: 1px solid var(--medium-gray); display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; transition: background-color 0.15s ease; }
         .password-item:last-child { border-bottom: none; }
-        .password-item:hover { background-color: var(--light-gray); }
-        .password-item > div:first-child { flex-grow: 1; overflow: hidden; /* Container for info+strength */ }
+        .password-item:hover { background-color: #f5f7fa; } /* Match body bg */
+        .password-item > div:first-child { flex-grow: 1; overflow: hidden; }
         .item-info { display: flex; flex-direction: column; line-height: 1.4; }
         .item-info strong { font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .item-info span { color: var(--dark-gray); font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        .item-actions { flex-shrink: 0; display: flex; gap: 5px;}
-        .item-actions button { font-size: 0.85em; padding: 4px 7px; background-color: var(--medium-gray); color: var(--text-color); border: 1px solid var(--border-color); border-radius: var(--border-radius); cursor: pointer; }
+        .item-actions { flex-shrink: 0; display: flex; gap: 5px; align-items: center; /* Vertically align buttons */ }
+        .item-actions button { /* Uses .btn-sm */
+             font-size: 0.8em; /* Smaller */
+             padding: 3px 6px;
+             background-color: var(--medium-gray);
+             color: var(--text-color);
+             border: 1px solid var(--border-color);
+             border-radius: var(--border-radius);
+             cursor: pointer;
+             white-space: nowrap; /* Prevent wrapping */
+        }
         .item-actions button:hover { background-color: #d3d9df; }
 
         /* Add Form */
-        .add-form { border: 1px solid var(--border-color); padding: 15px; border-radius: var(--border-radius); background-color: white; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .add-form h3 { font-size: 1.05em; margin: 0 0 15px 0; text-align: center; color: var(--secondary-color); font-weight: 500; }
+        .add-form {
+             border: 1px solid var(--border-color);
+             padding: 15px;
+             border-radius: var(--border-radius);
+             background-color: white;
+             margin-top: 10px;
+             box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+        .add-form h3 { font-size: 1.05em; margin: 0 0 15px 0; text-align: center; color: var(--secondary-color); font-weight: 500; border-bottom: none; padding-bottom: 0; }
         .add-form label { margin-bottom: 4px; font-size: 0.9em; font-weight: 500; display: block;}
-        .add-form input[type="text"], .add-form input[type="password"], .add-form input[type="range"] { width: 100%; padding: 9px; margin-bottom: 10px; font-size: 0.95em; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-sizing: border-box;}
-        .add-form input[type="range"] { padding: 0; height: 18px; margin-bottom: 5px;}
+        .add-form input[type="text"], .add-form input[type="password"] {
+            width: 100%;
+            padding: 9px 10px; /* Adjusted padding */
+            margin-bottom: 10px;
+            font-size: 0.95em;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+        }
+        .add-form input:focus {
+            border-color: var(--primary-color); /* Match focus */
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
         .add-form .form-buttons { display: flex; gap: 10px; margin-top: 15px; }
         .add-form .form-buttons button { flex-grow: 1; padding: 9px; }
-        .btn { border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 0.95em; font-weight: 500; transition: background-color 0.2s ease; }
-        .label-button-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .label-button-group label { margin-bottom: 0; }
-        .label-button-group button { padding: 2px 6px; font-size: 0.8em; }
+
+        /* Popup Buttons (General) */
+        .btn {
+             border: none;
+             border-radius: var(--border-radius);
+             cursor: pointer;
+             font-size: 0.95em;
+             font-weight: 500;
+             transition: background-color 0.2s ease;
+             padding: 9px 15px; /* Default popup button padding */
+        }
+        .btn:disabled {
+             background-color: #a9cce3 !important; /* Ensure disabled style overrides */
+             cursor: not-allowed;
+             opacity: 0.7;
+        }
         .btn-primary { background-color: var(--primary-color); color: white; }
-        .btn-primary:hover { background-color: #0056b3; }
+        .btn-primary:hover:not(:disabled) { background-color: #0056b3; }
         .btn-secondary { background-color: var(--secondary-color); color: white; }
-        .btn-secondary:hover { background-color: #5a6268; }
-        .btn-outline-secondary { background-color: transparent; border: 1px solid var(--secondary-color); color: var(--secondary-color); }
-        .btn-outline-secondary:hover { background-color: var(--secondary-color); color: white; }
-        .btn-add-toggle { width: 100%; padding: 10px; margin-top: 5px; background-color: var(--success-color); }
+        .btn-secondary:hover:not(:disabled) { background-color: #5a6268; }
+        .btn-outline-secondary {
+            background-color: transparent;
+            border: 1px solid var(--secondary-color);
+            color: var(--secondary-color);
+            padding: 2px 6px; /* Specific padding for outline */
+            font-size: 0.8em; /* Match size */
+        }
+        .btn-outline-secondary:hover:not(:disabled) { background-color: var(--secondary-color); color: white; }
+        .btn-add-toggle {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            background-color: var(--success-color);
+            color: white;
+        }
         .btn-add-toggle:hover { background-color: #218838; }
 
-         /* Popup Generator Options Styles */
+        /* Label + Button Group */
+        .label-button-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .label-button-group label { margin-bottom: 0; }
+        .label-button-group button { /* Uses .btn-outline-secondary */ }
+
+         /* Popup Generator Options */
         .popup-generator-options { border-top: 1px solid var(--medium-gray); margin-top: 15px; padding-top: 15px; }
         .popup-generator-options h4 { margin: 0 0 10px 0; font-size: 0.95em; color: var(--dark-gray); font-weight: 500; }
         .popup-length-control { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .popup-length-control label { margin-bottom: 0; font-size: 0.85em; }
-        .popup-length-control input[type="range"] { flex-grow: 1; margin-bottom: 0; }
-        .popup-length-display { font-weight: 600; font-size: 0.9em; min-width: 20px; text-align: right; }
+        .popup-length-control label { margin-bottom: 0; font-size: 0.85em; flex-shrink: 0; }
+        .popup-length-control input[type="range"] {
+             flex-grow: 1;
+             margin-bottom: 0;
+             height: 8px; background: #e9ecef; border-radius: 5px; appearance: none; cursor: pointer;
+        }
+         .popup-length-control input[type="range"]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; background: var(--primary-color); border-radius: 50%; cursor: pointer; }
+         .popup-length-control input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: var(--primary-color); border-radius: 50%; cursor: pointer; border: none; }
+        .popup-length-display { font-weight: 600; font-size: 0.9em; min-width: 20px; text-align: right; color: var(--primary-color); }
         .popup-char-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         .popup-option-group { display: flex; align-items: center; gap: 4px; }
         .popup-option-group label { margin-bottom: 0; font-weight: normal; font-size: 0.85em; color: var(--text-color); cursor: pointer;}
-        .popup-option-group input[type="checkbox"] { cursor: pointer; margin-top: 0px; width: auto; padding: 0; margin-bottom: 0;}
+        .popup-option-group input[type="checkbox"] { cursor: pointer; margin-top: 0px; width: auto; padding: 0; margin-bottom: 0; height: 14px; width: 14px;}
 
-        /* Popup Strength Display Styles */
+        /* Popup Strength Display */
         .popup-strength-area {
-            margin-top: 8px; /* Space below password input */
-            margin-bottom: 12px;
-            padding: 8px;
-            border-radius: var(--border-radius);
-            background-color: var(--light-gray);
-            border: 1px solid var(--medium-gray);
-            min-height: 45px;
-            font-size: 0.9em; /* Smaller text in popup */
-            transition: background-color 0.3s ease;
+            margin-top: 8px; margin-bottom: 12px; padding: 8px; border-radius: var(--border-radius);
+            background-color: var(--light-gray); border: 1px solid var(--medium-gray); min-height: 45px;
+            font-size: 0.9em; transition: background-color 0.3s ease, border-color 0.3s ease; display: none; /* Default hidden */
         }
          .popup-strength-area.strength-0 { background-color: #f8d7da; border-color: #f5c6cb;}
          .popup-strength-area.strength-1 { background-color: #fff3cd; border-color: #ffeeba;}
@@ -116,35 +235,38 @@
          .popup-strength-area.strength-4 { background-color: #c8e6c9; border-color: #a5d6a7;}
 
         .popup-strength-meter-container { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-        .popup-strength-label { font-weight: 600; font-size: 0.9em; width: 85px; flex-shrink: 0; }
+        .popup-strength-label { font-weight: 600; font-size: 0.9em; width: 85px; flex-shrink: 0; color: #444;}
         .popup-strength-bar { height: 8px; background-color: #e9ecef; border-radius: 4px; overflow: hidden; flex-grow: 1; }
         .popup-strength-indicator { height: 100%; width: 0%; transition: width 0.4s ease, background-color 0.4s ease; border-radius: 4px; }
-        /* Use same strength color classes from index.html: .very-weak, .weak, etc. */
-        .very-weak { background-color: #dc3545; width: 10%; }
-        .weak { background-color: #fd7e14; width: 30%; }
-        .medium { background-color: #ffc107; width: 55%; }
-        .strong { background-color: #20c997; width: 80%; }
-        .very-strong { background-color: #198754; width: 100%; }
+        /* Strength Colors (copied from main style.css) */
+        .popup-strength-indicator.very-weak { background-color: #dc3545; width: 10%; }
+        .popup-strength-indicator.weak { background-color: #fd7e14; width: 30%; }
+        .popup-strength-indicator.medium { background-color: #ffc107; width: 55%; }
+        .popup-strength-indicator.strong { background-color: #20c997; width: 80%; }
+        .popup-strength-indicator.very-strong { background-color: #198754; width: 100%; }
 
         #popup-strength-feedback { font-size: 0.85em; color: var(--dark-gray); line-height: 1.3; }
-        #popup-strength-feedback ul { list-style: none; padding-left: 0; margin: 3px 0 0 0; }
-        #popup-strength-feedback li { margin-bottom: 2px; }
-        #popup-strength-feedback li::before { content: '• '; margin-right: 3px; }
+        #popup-strength-feedback ul { list-style: none; padding-left: 0; margin: 5px 0 0 0; }
+        #popup-strength-feedback li { margin-bottom: 3px; padding-left: 12px; position: relative; }
+        #popup-strength-feedback li::before { content: '• '; margin-right: 3px; position: absolute; left: 0; top: 0; }
         #popup-strength-feedback li.warning { color: #856404; font-weight: 500;}
+        #popup-strength-feedback li.warning::before { color: #fd7e14; }
         #popup-strength-feedback li.suggestion { color: #0c5460; }
+        #popup-strength-feedback li.suggestion::before { color: #198754; }
 
-        /* Style for strength in list items */
+        /* Strength display in LIST items */
         .strength-display-popup {
              font-size: 0.8em; text-align: right; margin-top: 4px; padding-right: 5px; display: none; /* Hide initially */
+             font-weight: 500;
         }
-         .strength-display-popup.score-0 { color: #dc3545; font-weight: 500; }
-         .strength-display-popup.score-1 { color: #fd7e14; font-weight: 500; }
-         .strength-display-popup.score-2 { color: #ffc107; }
+         .strength-display-popup.score-0 { color: #dc3545; }
+         .strength-display-popup.score-1 { color: #fd7e14; }
+         .strength-display-popup.score-2 { color: #ffc107; font-weight: normal; }
          .strength-display-popup.score-3 { color: #20c997; }
-         .strength-display-popup.score-4 { color: #198754; font-weight: 500; }
+         .strength-display-popup.score-4 { color: #198754; }
 
         /* Status/Error Messages */
-        .status-message { padding: 8px 10px; margin-top: 10px; border-radius: var(--border-radius); text-align: center; font-size: 0.9em; border: 1px solid transparent; }
+        .status-message { padding: 8px 10px; margin-bottom: 10px; /* Add bottom margin */ border-radius: var(--border-radius); text-align: center; font-size: 0.9em; border: 1px solid transparent; }
         .status-error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
         .status-success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
         .status-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb;}
@@ -164,7 +286,7 @@
                 <input type="email" id="email" placeholder="Enter your email" required>
                 <label for="masterPasswordLogin">Master Password:</label>
                 <input type="password" id="masterPasswordLogin" placeholder="Enter Master Password" required>
-                <button id="login-btn" class="btn btn-primary" style="margin-top: 10px;">Login</button>
+                <button id="login-btn" class="btn btn-primary">Login</button> <!-- Applied general button style -->
             </div>
         </div>
 
@@ -197,11 +319,11 @@
                     <input type="password" id="new-password" placeholder="Enter or generate password" required>
 
                     <!-- Popup Strength Display -->
-                    <div id="popup-strength-area" class="popup-strength-area" style="display: none;">
+                    <div id="popup-strength-area" class="popup-strength-area"> <!-- Initially not hidden, but content manages display -->
                         <div class="popup-strength-meter-container">
                              <span class="popup-strength-label" id="popup-strength-text-label">Strength:</span>
                              <div class="popup-strength-bar">
-                                 <div id="popup-strength-indicator" class="popup-strength-indicator"></div>
+                                 <div id="popup-strength-indicator" class="popup-strength-indicator very-weak"></div> <!-- Default class -->
                              </div>
                         </div>
                         <div id="popup-strength-feedback"></div>
@@ -210,8 +332,8 @@
 
                     <!-- Generator Options -->
                     <div class="popup-generator-options">
-                         <h4>Options</h4>
-                         <div class="popup-length-control"> <label for="popup-gen-length">Len:</label> <input type="range" id="popup-gen-length" name="popup-gen-length" min="8" max="64" value="16"> <span class="popup-length-display" id="popup-gen-length-value">16</span> </div>
+                         <h4>Generator Options</h4>
+                         <div class="popup-length-control"> <label for="popup-gen-length">Length:</label> <input type="range" id="popup-gen-length" name="popup-gen-length" min="8" max="64" value="16"> <span class="popup-length-display" id="popup-gen-length-value">16</span> </div>
                          <div class="popup-char-options">
                              <div class="popup-option-group"> <input type="checkbox" id="popup-gen-lowercase" checked> <label for="popup-gen-lowercase">a-z</label> </div>
                              <div class="popup-option-group"> <input type="checkbox" id="popup-gen-uppercase" checked> <label for="popup-gen-uppercase">A-Z</label> </div>
@@ -220,7 +342,7 @@
                          </div>
                      </div>
 
-                    <label for="masterPasswordSave" style="margin-top:5px;">Confirm Master Password:</label> <!-- Less margin -->
+                    <label for="masterPasswordSave">Confirm Master Password:</label>
                     <input type="password" id="masterPasswordSave" placeholder="Enter Master Password to save" required>
                     <div class="form-buttons">
                         <button id="save-password-btn" class="btn btn-primary">Encrypt & Save</button>
