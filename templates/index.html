@@ -31,14 +31,48 @@
         /* Form styles */
         .form-group { margin-bottom: 25px; position: relative; }
         label { display: block; margin-bottom: 8px; font-weight: 500; color: #555; }
-        input[type="text"], input[type="password"], input[type="email"] { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; transition: border-color 0.3s ease; box-sizing: border-box; }
+        input[type="text"], input[type="password"], input[type="email"], input[type="number"] { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; transition: border-color 0.3s ease; box-sizing: border-box; }
+        input[type="range"] { width: 100%; cursor: pointer; }
         input:focus { border-color: #3498db; outline: none; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }
         .btn { background-color: #3498db; color: white; border: none; border-radius: 4px; padding: 12px 25px; font-size: 1rem; cursor: pointer; transition: background-color 0.3s ease; font-weight: 500; }
         .btn:hover { background-color: #2980b9; }
         .btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .btn-outline-secondary { background-color: transparent; border: 1px solid #6c757d; color: #6c757d; }
+        .btn-outline-secondary:hover { background-color: #6c757d; color: white; }
+        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; line-height: 1.5; border-radius: 0.2rem; }
+
+        .password-input-group { display: flex; align-items: center; gap: 10px; }
+        .password-input-group input[type="password"] { flex-grow: 1; } /* Password input takes available space */
+        .password-input-group .toggle-button { position: absolute; right: 95px; /* Adjust based on generate button */ top: 50%; transform: translateY(-50%); }
+        .password-input-group .generate-button { flex-shrink: 0; /* Prevent button from shrinking */ }
+
+        /* --- NEW: Generator Options Styles --- */
+        .generator-options {
+            border: 1px dashed #ccc;
+            padding: 15px 20px;
+            margin-top: -15px; /* Pull up slightly */
+            margin-bottom: 25px;
+            border-radius: 4px;
+            background-color: #fdfdfd;
+        }
+        .generator-options h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1em;
+            color: #555;
+            font-weight: 600;
+        }
+        .length-control { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .length-control label { margin-bottom: 0; flex-basis: 100px; flex-shrink: 0;}
+        .length-control input[type="range"] { flex-grow: 1; }
+        .length-control .length-display { font-weight: 600; min-width: 25px; text-align: right; }
+        .char-options { display: flex; flex-wrap: wrap; gap: 20px; }
+        .option-group { display: flex; align-items: center; gap: 5px; }
+        .option-group label { margin-bottom: 0; font-weight: normal; color: #333; cursor: pointer;}
+        .option-group input[type="checkbox"] { cursor: pointer; margin-top: -1px; }
 
         /* Password field with toggle */
-        .toggle-button { position: absolute; right: 10px; top: 40px; /* Adjust based on label presence */ background: none; border: none; color: #3498db; cursor: pointer; font-size: 14px; padding: 5px; }
+        .toggle-button { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #3498db; cursor: pointer; font-size: 14px; padding: 5px; }
 
         /* Messages */
         .message { padding: 15px; border-radius: 4px; margin-top: 20px; font-size: 0.95rem; text-align: center; display: none; /* Initially hidden */ }
@@ -54,7 +88,10 @@
             nav a { border-bottom: 1px solid #eee; }
             nav a.active { border-bottom-color: #007bff; }
             .logout-link { float: none; text-align: center; margin: 10px 0; display: block; }
-            .toggle-button { top: 38px; }
+            .password-input-group .toggle-button { right: 85px; }
+            .length-control { flex-wrap: wrap; }
+            .length-control label { flex-basis: auto; width: 100%; margin-bottom: 5px; }
+            .char-options { gap: 15px; }
         }
     </style>
 </head>
@@ -88,9 +125,42 @@
                     </div>
                     <div class="form-group">
                         <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" required autocomplete="new-password">
-                        <button type="button" id="toggle-password" class="toggle-button" title="Show/hide password">Show</button>
+                        <div class="password-input-group">
+                            <input type="password" id="password" name="password" required autocomplete="new-password" style="padding-right: 40px;">
+                            <button type="button" id="toggle-password" class="toggle-button" title="Show/hide password">Show</button>
+                            <button type="button" id="generate-password-btn" class="btn btn-outline-secondary btn-sm generate-button">Generate</button>
+                        </div>
                     </div>
+
+                    <!-- NEW: Generator Options -->
+                    <div id="generator-options" class="generator-options">
+                        <h4>Generator Options</h4>
+                        <div class="length-control">
+                            <label for="gen-length">Length:</label>
+                            <input type="range" id="gen-length" name="gen-length" min="8" max="64" value="16">
+                            <span class="length-display" id="gen-length-value">16</span>
+                        </div>
+                        <div class="char-options">
+                            <div class="option-group">
+                                <input type="checkbox" id="gen-lowercase" name="gen-lowercase" checked>
+                                <label for="gen-lowercase">Lowercase (a-z)</label>
+                            </div>
+                            <div class="option-group">
+                                <input type="checkbox" id="gen-uppercase" name="gen-uppercase" checked>
+                                <label for="gen-uppercase">Uppercase (A-Z)</label>
+                            </div>
+                            <div class="option-group">
+                                <input type="checkbox" id="gen-digits" name="gen-digits" checked>
+                                <label for="gen-digits">Digits (0-9)</label>
+                            </div>
+                            <div class="option-group">
+                                <input type="checkbox" id="gen-symbols" name="gen-symbols" checked>
+                                <label for="gen-symbols">Symbols (!@#...)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End Generator Options -->
+
                     <div class="form-group">
                         <button type="submit" class="btn">Encrypt & Save</button>
                     </div>
@@ -105,65 +175,12 @@
     </div>
 
     <script>
-        // --- E2EE Helper Functions (JavaScript using Web Crypto API) ---
-
-        function base64UrlDecode(b64url) {
-            // Replace URL-safe characters, add padding, then decode
-            let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-            while (b64.length % 4) {
-                b64 += '=';
-            }
-            return base64ToArrayBuffer(b64);
-        }
-
-        async function getEncryptionKeyRawBytes() {
-            // Key stored in session is base64url encoded derived key
-            const keyB64Url = sessionStorage.getItem('encryptionKey');
-            if (!keyB64Url) {
-                console.error("Encryption key not found in session storage.");
-                alert("Error: Encryption key missing. Please log in again.");
-                window.location.href = "{{ url_for('login') }}"; // Redirect if key is missing
-                return null;
-            }
-            // Decode the base64url string into raw bytes (ArrayBuffer)
-            try {
-                 return base64UrlDecode(keyB64Url);
-            } catch (e) {
-                 console.error("Failed to decode encryption key:", e);
-                 alert("Error: Invalid encryption key found. Please log in again.");
-                 window.location.href = "{{ url_for('login') }}";
-                 return null;
-            }
-        }
-
-        async function encryptData(keyBuffer, data) {
-            try {
-                const iv = crypto.getRandomValues(new Uint8Array(12));
-                const dataString = JSON.stringify(data);
-                const encodedData = new TextEncoder().encode(dataString);
-                const cryptoKey = await crypto.subtle.importKey( "raw", keyBuffer, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
-                const encryptedContent = await crypto.subtle.encrypt( { name: "AES-GCM", iv: iv }, cryptoKey, encodedData );
-                const combinedBuffer = new Uint8Array(iv.length + encryptedContent.byteLength);
-                combinedBuffer.set(iv, 0);
-                combinedBuffer.set(new Uint8Array(encryptedContent), iv.length);
-                return arrayBufferToBase64(combinedBuffer); // Regular Base64 encode for storage
-            } catch (error) {
-                console.error("Encryption failed:", error);
-                throw new Error("Could not encrypt data.");
-            }
-        }
-
-        function arrayBufferToBase64(buffer) {
-            let binary = ''; const bytes = new Uint8Array(buffer); const len = bytes.byteLength;
-            for (let i = 0; i < len; i++) { binary += String.fromCharCode(bytes[i]); }
-            return window.btoa(binary);
-        }
-         function base64ToArrayBuffer(base64) {
-            try {
-                const binary_string = window.atob(base64); const len = binary_string.length; const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); } return bytes.buffer;
-            } catch (e) { console.error("Base64 decoding failed:", e); throw new Error("Invalid Base64 string"); }
-        }
+        // --- E2EE Helper Functions (Same as before) ---
+        function base64UrlDecode(b64url){let b64=b64url.replace(/-/g,'+').replace(/_/g,'/');while(b64.length%4){b64+='=';}return base64ToArrayBuffer(b64);}
+        async function getEncryptionKeyRawBytes(){const k=sessionStorage.getItem('encryptionKey');if(!k){console.error("Key missing.");alert("Key missing. Login.");window.location.href="{{ url_for('login') }}";return null;}try{return base64UrlDecode(k);}catch(e){console.error("Key decode fail:",e);alert("Invalid key. Login.");window.location.href="{{ url_for('login') }}";return null;}}
+        async function encryptData(b,d){try{const i=crypto.getRandomValues(new Uint8Array(12));const s=JSON.stringify(d);const e=new TextEncoder().encode(s);const k=await crypto.subtle.importKey("raw",b,{name:"AES-GCM",length:256},!1,["encrypt"]);const c=await crypto.subtle.encrypt({name:"AES-GCM",iv:i},k,e);const o=new Uint8Array(i.length+c.byteLength);o.set(i,0);o.set(new Uint8Array(c),i.length);return arrayBufferToBase64(o);}catch(r){console.error("Encrypt fail:",r);throw new Error("Could not encrypt.");}}
+        function arrayBufferToBase64(b){let s='';const y=new Uint8Array(b);const l=y.byteLength;for(let i=0;i<l;i++){s+=String.fromCharCode(y[i]);}return window.btoa(s);}
+        function base64ToArrayBuffer(b){try{const s=window.atob(b);const l=s.length;const y=new Uint8Array(l);for(let i=0;i<l;i++){y[i]=s.charCodeAt(i);}return y.buffer;}catch(e){console.error("B64 decode fail:",e);throw new Error("Invalid Base64.");}}
 
 
         // --- DOMContentLoaded Event Listener ---
@@ -173,9 +190,8 @@
                  sessionStorage.setItem('encryptionKey', flaskProvidedKey);
              } else if (!sessionStorage.getItem('encryptionKey')) {
                  console.warn("Encryption key missing. Redirecting to login.");
-                 // Force login if key isn't available on page load
                  window.location.href = "{{ url_for('login') }}";
-                 return; // Stop further execution
+                 return;
              }
 
             const form = document.getElementById('password-form');
@@ -183,11 +199,72 @@
             const togglePasswordBtn = document.getElementById('toggle-password');
             const passwordInput = document.getElementById('password');
             const submitButton = form.querySelector('button[type="submit"]');
+            const generatePasswordBtn = document.getElementById('generate-password-btn');
+
+            // --- NEW: Generator Option Elements ---
+            const genLengthSlider = document.getElementById('gen-length');
+            const genLengthValueSpan = document.getElementById('gen-length-value');
+            const genLowercaseCheckbox = document.getElementById('gen-lowercase');
+            const genUppercaseCheckbox = document.getElementById('gen-uppercase');
+            const genDigitsCheckbox = document.getElementById('gen-digits');
+            const genSymbolsCheckbox = document.getElementById('gen-symbols');
+            // const generatorOptionsDiv = document.getElementById('generator-options'); // Optional: could hide/show this
+
+            // --- NEW: Update Length Display ---
+            genLengthSlider.addEventListener('input', function() {
+                genLengthValueSpan.textContent = this.value;
+            });
 
             togglePasswordBtn.addEventListener('click', function() {
                 const currentType = passwordInput.type;
                 passwordInput.type = (currentType === 'password') ? 'text' : 'password';
                 togglePasswordBtn.textContent = (currentType === 'password') ? 'Hide' : 'Show';
+            });
+
+            generatePasswordBtn.addEventListener('click', async function() {
+                 messageEl.textContent = ''; messageEl.className = 'message';
+                 generatePasswordBtn.disabled = true; generatePasswordBtn.textContent = '...';
+
+                 // --- NEW: Read Options ---
+                 const options = {
+                     length: parseInt(genLengthSlider.value, 10),
+                     use_lowercase: genLowercaseCheckbox.checked,
+                     use_uppercase: genUppercaseCheckbox.checked,
+                     use_digits: genDigitsCheckbox.checked,
+                     use_symbols: genSymbolsCheckbox.checked
+                 };
+
+                 try {
+                     const response = await fetch("{{ url_for('generate_password_api') }}", {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(options) // Send options in the body
+                     });
+                     const result = await response.json();
+
+                     if (response.ok && result.password) {
+                         passwordInput.value = result.password;
+                         passwordInput.type = 'text'; // Make visible
+                         togglePasswordBtn.textContent = 'Hide';
+                         passwordInput.dispatchEvent(new Event('input', { bubbles: true })); // Trigger events
+                         passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+                         // Optional: Hide again after delay
+                         setTimeout(() => {
+                              if (passwordInput.type === 'text') {
+                                 passwordInput.type = 'password';
+                                 togglePasswordBtn.textContent = 'Show';
+                              }
+                         }, 2500);
+                     } else {
+                         throw new Error(result.error || 'Failed to generate password.');
+                     }
+                 } catch (error) {
+                     messageEl.textContent = `Generation Error: ${error.message}`;
+                     messageEl.className = 'message error';
+                     console.error('Generate Password Error:', error);
+                 } finally {
+                     generatePasswordBtn.disabled = false; generatePasswordBtn.textContent = 'Generate';
+                 }
             });
 
             form.addEventListener('submit', async function(e) {
@@ -208,7 +285,7 @@
 
                 try {
                     const keyBuffer = await getEncryptionKeyRawBytes();
-                    if (!keyBuffer) return; // Error handled in getter
+                    if (!keyBuffer) return;
 
                     const dataToEncrypt = { service: service, username: username, password: password };
                     const encryptedB64Data = await encryptData(keyBuffer, dataToEncrypt);
@@ -218,16 +295,23 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ encrypted_data: encryptedB64Data, service_hint: service })
                     });
-
                     const result = await response.json();
 
                     if (response.ok && result.success) {
                         messageEl.textContent = 'Credential encrypted and saved successfully!';
                         messageEl.className = 'message success';
                         form.reset();
-                        if (passwordInput.type === 'text') {
-                             passwordInput.type = 'password'; togglePasswordBtn.textContent = 'Show';
-                         }
+                         // Reset generator options to defaults too
+                         genLengthSlider.value = 16;
+                         genLengthValueSpan.textContent = '16';
+                         genLowercaseCheckbox.checked = true;
+                         genUppercaseCheckbox.checked = true;
+                         genDigitsCheckbox.checked = true;
+                         genSymbolsCheckbox.checked = true;
+                         // Ensure password field is type password again
+                         passwordInput.type = 'password';
+                         togglePasswordBtn.textContent = 'Show';
+
                     } else {
                         messageEl.textContent = `Error: ${result.message || 'Failed to save credential.'}`;
                         messageEl.className = 'message error';

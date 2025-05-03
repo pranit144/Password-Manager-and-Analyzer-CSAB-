@@ -1,3 +1,5 @@
+# --- START OF FILE app.py ---
+
 import os
 import json
 import hashlib
@@ -5,6 +7,9 @@ import time
 import re
 import base64
 import traceback # For detailed error logging
+import secrets  # Use secrets for cryptographic randomness
+import string   # For character sets
+import random   # For shuffling (secrets doesn't have shuffle)
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
@@ -98,8 +103,6 @@ def derive_key(master_password: str, salt_or_email: str) -> bytes:
 
 # --- Password Analysis Functions ---
 # (get_character_composition, get_llm_password_insights, get_basic_password_analysis_from_chars, get_mock_llm_insights_from_chars)
-# Keep these functions as they were in the previous correct version.
-# ... (Copy the 4 analysis functions from the previous response here) ...
 def get_character_composition(password):
     """Generates character composition dict."""
     composition = { 'lowercase': 0, 'uppercase': 0, 'digits': 0, 'special': 0 }
@@ -204,6 +207,43 @@ def get_mock_llm_insights_from_chars(characteristics: dict):
     if basic_analysis['strength'] < 4: basic_analysis['suggestions'].append("Consider passphrase.")
     if not basic_analysis['insights'] and basic_analysis['strength'] >= 4: basic_analysis['insights'].append("Good length/variety.")
     return basic_analysis
+
+
+# --- NEW: Password Generation Function ---
+def generate_secure_password(length=16, use_lowercase=True, use_uppercase=True, use_digits=True, use_symbols=True):
+    """Generates a secure password ensuring character set inclusion."""
+    character_pool = []
+    required_chars = []
+
+    if use_lowercase:
+        character_pool.extend(string.ascii_lowercase)
+        required_chars.append(secrets.choice(string.ascii_lowercase))
+    if use_uppercase:
+        character_pool.extend(string.ascii_uppercase)
+        required_chars.append(secrets.choice(string.ascii_uppercase))
+    if use_digits:
+        character_pool.extend(string.digits)
+        required_chars.append(secrets.choice(string.digits))
+    if use_symbols:
+        # Define a standard set of symbols, avoid potentially problematic ones like `'"\
+        symbols = '!@#$%^&*()_-+={}[]|:;<>,.?/~'
+        character_pool.extend(symbols)
+        required_chars.append(secrets.choice(symbols))
+
+    if not character_pool:
+        raise ValueError("No character types selected for password generation.")
+
+    if length < len(required_chars):
+        raise ValueError(f"Length ({length}) is too short to include all required character types ({len(required_chars)}).")
+
+    # Fill the rest of the password length
+    remaining_length = length - len(required_chars)
+    password_chars = required_chars + [secrets.choice(character_pool) for _ in range(remaining_length)]
+
+    # Shuffle the list to ensure randomness
+    random.SystemRandom().shuffle(password_chars) # Use system random for better shuffling
+
+    return "".join(password_chars)
 
 
 # --- Routes ---
@@ -348,6 +388,64 @@ def analyse_password_api():
         else: feedback.append("Issue: Review password based on assessment.")
     return jsonify({ 'strength': analysis.get('strength', 1), 'assessment': analysis.get('assessment', 'Weak'), 'feedback': feedback })
 
+
+# --- NEW: Password Generation API Endpoint ---
+@app.route('/api/generate_password', methods=['POST']) # Using POST for consistency
+@login_required
+def generate_password_api():
+    try:
+        data = request.get_json(silent=True)
+
+        if data is None:
+            data = request.args.to_dict()
+            if not data:
+                data = {}
+
+        # Safely get length
+        try:
+            length_str = data.get('length', '16') # Default to string '16'
+            length = int(length_str)
+            if not (4 <= length <= 128):
+                 return jsonify({'error': 'Length must be between 4 and 128.'}), 400
+        except (ValueError, TypeError):
+             return jsonify({'error': f'Invalid length parameter: "{length_str}". Must be an integer.'}), 400
+
+        # Helper for robust boolean parsing from various request inputs
+        def parse_bool(key, default_value):
+            value = data.get(key, default_value) # Get value or default
+            if isinstance(value, bool): return value
+            if isinstance(value, str):
+                low_val = value.lower()
+                if low_val in ['true', '1', 'yes', 'y']: return True
+                if low_val in ['false', '0', 'no', 'n']: return False
+            # Check for integer 1/0 as well
+            if isinstance(value, int) and value in [0, 1]:
+                return bool(value)
+            # If it's none of the above, return the original default
+            # print(f"Warning: Unexpected type for boolean parse '{key}': {type(value)}, using default: {default_value}")
+            return default_value
+
+        use_lowercase = parse_bool('use_lowercase', True)
+        use_uppercase = parse_bool('use_uppercase', True)
+        use_digits    = parse_bool('use_digits', True)
+        use_symbols   = parse_bool('use_symbols', True)
+
+        if not any([use_lowercase, use_uppercase, use_digits, use_symbols]):
+             return jsonify({'error': 'At least one character type must be selected.'}), 400
+
+        password = generate_secure_password(length, use_lowercase, use_uppercase, use_digits, use_symbols)
+        return jsonify({'password': password})
+
+    except ValueError as ve:
+        print(f"Password generation validation error: {ve}")
+        return jsonify({'error': str(ve)}), 400
+    except Exception as e:
+        print(f"Unexpected error in generate_password_api: {type(e).__name__} - {e}")
+        traceback.print_exc()
+        return jsonify({'error': 'Server error generating password.'}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=app.config['DEBUG'])
+
+# --- END OF FILE app.py ---
