@@ -1,3 +1,4 @@
+<!-- START OF FILE login.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +7,7 @@
     <title>Login - Secure Password Manager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
      <style>
+        /* Reusing login styles */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 400px; margin: 40px auto; padding: 30px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #333; margin-bottom: 25px; }
         .form-group { margin-bottom: 20px; }
@@ -23,6 +25,10 @@
         .mt-3 { margin-top: 1.5rem; }
         .link { color: #007bff; text-decoration: none; }
         .link:hover { text-decoration: underline; }
+        /* Style for Remember Me checkbox */
+        .form-group.remember-me { display: flex; align-items: center; gap: 8px; margin-bottom: 25px; }
+        .form-group.remember-me label { margin-bottom: 0; font-weight: normal; color: #555; cursor: pointer; }
+        .form-group.remember-me input[type="checkbox"] { width: auto; margin-top: -1px; cursor: pointer;}
     </style>
 </head>
 <body>
@@ -46,6 +52,12 @@
             <label for="password">Master Password:</label>
             <input type="password" id="password" name="password" required autocomplete="current-password">
         </div>
+        <!-- ** ADDED REMEMBER ME CHECKBOX ** -->
+        <div class="form-group remember-me">
+            <input type="checkbox" id="remember" name="remember" value="yes">
+            <label for="remember">Remember me</label>
+        </div>
+        <!-- ** END REMEMBER ME ** -->
         <button type="submit" class="btn">Login</button>
     </form>
     <p class="text-center mt-3">
@@ -53,3 +65,4 @@
     </p>
 </body>
 </html>
+<!-- END OF FILE login.html -->

@@ -35,7 +35,7 @@
         .popup-header #logout-btn:hover { background-color: rgba(255, 255, 255, 0.3); }
 
         /* Content Area */
-        .content-area { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .content-area { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; /* Allow content scroll if needed */ max-height: 500px; /* Limit popup height */}
 
         /* Login View */
         #login-view { padding: 20px; background-color: white; border-radius: var(--border-radius); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -51,12 +51,13 @@
         #search-input { width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-sizing: border-box; font-size: 0.95em; margin-bottom: 10px; }
         #search-input:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,.25); }
 
-        .password-list-container { flex-grow: 1; max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: white; margin-bottom: 10px; }
+        .password-list-container { flex-grow: 1; max-height: 200px; /* Adjusted height for list */ overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: white; margin-bottom: 10px; }
         .password-list { list-style: none; padding: 0; margin: 0; }
-        .password-item { padding: 10px 12px; border-bottom: 1px solid var(--medium-gray); display: flex; justify-content: space-between; align-items: center; gap: 10px; transition: background-color 0.15s ease; }
+        .password-item { padding: 10px 12px; border-bottom: 1px solid var(--medium-gray); display: flex; justify-content: space-between; align-items: flex-start; /* Align items top */ gap: 10px; transition: background-color 0.15s ease; }
         .password-item:last-child { border-bottom: none; }
         .password-item:hover { background-color: var(--light-gray); }
-        .item-info { flex-grow: 1; display: flex; flex-direction: column; line-height: 1.4; overflow: hidden; }
+        .password-item > div:first-child { flex-grow: 1; overflow: hidden; /* Container for info+strength */ }
+        .item-info { display: flex; flex-direction: column; line-height: 1.4; }
         .item-info strong { font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .item-info span { color: var(--dark-gray); font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .item-actions { flex-shrink: 0; display: flex; gap: 5px;}
@@ -68,8 +69,8 @@
         .add-form h3 { font-size: 1.05em; margin: 0 0 15px 0; text-align: center; color: var(--secondary-color); font-weight: 500; }
         .add-form label { margin-bottom: 4px; font-size: 0.9em; font-weight: 500; display: block;}
         .add-form input[type="text"], .add-form input[type="password"], .add-form input[type="range"] { width: 100%; padding: 9px; margin-bottom: 10px; font-size: 0.95em; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-sizing: border-box;}
-        .add-form input[type="range"] { padding: 0; height: 18px; margin-bottom: 5px;} /* Adjust slider padding/height */
-        .add-form .form-buttons { display: flex; gap: 10px; margin-top: 15px; } /* More margin before buttons */
+        .add-form input[type="range"] { padding: 0; height: 18px; margin-bottom: 5px;}
+        .add-form .form-buttons { display: flex; gap: 10px; margin-top: 15px; }
         .add-form .form-buttons button { flex-grow: 1; padding: 9px; }
         .btn { border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 0.95em; font-weight: 500; transition: background-color 0.2s ease; }
         .label-button-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
@@ -84,18 +85,9 @@
         .btn-add-toggle { width: 100%; padding: 10px; margin-top: 5px; background-color: var(--success-color); }
         .btn-add-toggle:hover { background-color: #218838; }
 
-         /* --- NEW: Generator Options Styles (Popup Specific) --- */
-        .popup-generator-options {
-             border-top: 1px solid var(--medium-gray);
-             margin-top: 15px;
-             padding-top: 15px;
-        }
-        .popup-generator-options h4 {
-             margin: 0 0 10px 0;
-             font-size: 0.95em;
-             color: var(--dark-gray);
-             font-weight: 500;
-        }
+         /* Popup Generator Options Styles */
+        .popup-generator-options { border-top: 1px solid var(--medium-gray); margin-top: 15px; padding-top: 15px; }
+        .popup-generator-options h4 { margin: 0 0 10px 0; font-size: 0.95em; color: var(--dark-gray); font-weight: 500; }
         .popup-length-control { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .popup-length-control label { margin-bottom: 0; font-size: 0.85em; }
         .popup-length-control input[type="range"] { flex-grow: 1; margin-bottom: 0; }
@@ -105,6 +97,51 @@
         .popup-option-group label { margin-bottom: 0; font-weight: normal; font-size: 0.85em; color: var(--text-color); cursor: pointer;}
         .popup-option-group input[type="checkbox"] { cursor: pointer; margin-top: 0px; width: auto; padding: 0; margin-bottom: 0;}
 
+        /* Popup Strength Display Styles */
+        .popup-strength-area {
+            margin-top: 8px; /* Space below password input */
+            margin-bottom: 12px;
+            padding: 8px;
+            border-radius: var(--border-radius);
+            background-color: var(--light-gray);
+            border: 1px solid var(--medium-gray);
+            min-height: 45px;
+            font-size: 0.9em; /* Smaller text in popup */
+            transition: background-color 0.3s ease;
+        }
+         .popup-strength-area.strength-0 { background-color: #f8d7da; border-color: #f5c6cb;}
+         .popup-strength-area.strength-1 { background-color: #fff3cd; border-color: #ffeeba;}
+         .popup-strength-area.strength-2 { background-color: #d1ecf1; border-color: #bee5eb;}
+         .popup-strength-area.strength-3 { background-color: #d4edda; border-color: #c3e6cb;}
+         .popup-strength-area.strength-4 { background-color: #c8e6c9; border-color: #a5d6a7;}
+
+        .popup-strength-meter-container { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+        .popup-strength-label { font-weight: 600; font-size: 0.9em; width: 85px; flex-shrink: 0; }
+        .popup-strength-bar { height: 8px; background-color: #e9ecef; border-radius: 4px; overflow: hidden; flex-grow: 1; }
+        .popup-strength-indicator { height: 100%; width: 0%; transition: width 0.4s ease, background-color 0.4s ease; border-radius: 4px; }
+        /* Use same strength color classes from index.html: .very-weak, .weak, etc. */
+        .very-weak { background-color: #dc3545; width: 10%; }
+        .weak { background-color: #fd7e14; width: 30%; }
+        .medium { background-color: #ffc107; width: 55%; }
+        .strong { background-color: #20c997; width: 80%; }
+        .very-strong { background-color: #198754; width: 100%; }
+
+        #popup-strength-feedback { font-size: 0.85em; color: var(--dark-gray); line-height: 1.3; }
+        #popup-strength-feedback ul { list-style: none; padding-left: 0; margin: 3px 0 0 0; }
+        #popup-strength-feedback li { margin-bottom: 2px; }
+        #popup-strength-feedback li::before { content: '• '; margin-right: 3px; }
+        #popup-strength-feedback li.warning { color: #856404; font-weight: 500;}
+        #popup-strength-feedback li.suggestion { color: #0c5460; }
+
+        /* Style for strength in list items */
+        .strength-display-popup {
+             font-size: 0.8em; text-align: right; margin-top: 4px; padding-right: 5px; display: none; /* Hide initially */
+        }
+         .strength-display-popup.score-0 { color: #dc3545; font-weight: 500; }
+         .strength-display-popup.score-1 { color: #fd7e14; font-weight: 500; }
+         .strength-display-popup.score-2 { color: #ffc107; }
+         .strength-display-popup.score-3 { color: #20c997; }
+         .strength-display-popup.score-4 { color: #198754; font-weight: 500; }
 
         /* Status/Error Messages */
         .status-message { padding: 8px 10px; margin-top: 10px; border-radius: var(--border-radius); text-align: center; font-size: 0.9em; border: 1px solid transparent; }
@@ -141,7 +178,7 @@
                  <div class="main-header"> <span id="current-domain" title="Current Tab Domain">Domain: N/A</span> </div>
                 <input type="search" id="search-input" placeholder="Filter by service name...">
                 <div id="status-indicator" class="status-message status-info hidden"></div>
-                <div class="password-list-container"> <ul id="password-list"> <li style="padding: 10px; text-align: center; color: #777; list-style: none;">Loading...</li> </ul> </div>
+                <div class="password-list-container"> <ul id="password-list"> <!-- List items modified by JS --> </ul> </div>
                 <button id="add-password-btn" class="btn btn-secondary btn-add-toggle">+ Add New Credential</button>
 
                 <!-- Add/Edit Form -->
@@ -153,43 +190,37 @@
                     <label for="new-username">Username/Email:</label>
                     <input type="text" id="new-username" placeholder="Your username or email" required>
 
-                    <!-- Password Input & Generate Btn -->
                     <div class="label-button-group">
                          <label for="new-password">Password:</label>
                          <button type="button" id="generate-popup-password-btn" class="btn btn-outline-secondary">Generate</button>
                     </div>
                     <input type="password" id="new-password" placeholder="Enter or generate password" required>
 
-                    <!-- NEW: Generator Options (Popup) -->
-                    <div class="popup-generator-options">
-                        <h4>Options</h4>
-                        <div class="popup-length-control">
-                            <label for="popup-gen-length">Len:</label>
-                            <input type="range" id="popup-gen-length" name="popup-gen-length" min="8" max="64" value="16">
-                            <span class="popup-length-display" id="popup-gen-length-value">16</span>
+                    <!-- Popup Strength Display -->
+                    <div id="popup-strength-area" class="popup-strength-area" style="display: none;">
+                        <div class="popup-strength-meter-container">
+                             <span class="popup-strength-label" id="popup-strength-text-label">Strength:</span>
+                             <div class="popup-strength-bar">
+                                 <div id="popup-strength-indicator" class="popup-strength-indicator"></div>
+                             </div>
                         </div>
-                        <div class="popup-char-options">
-                            <div class="popup-option-group">
-                                <input type="checkbox" id="popup-gen-lowercase" checked>
-                                <label for="popup-gen-lowercase">a-z</label>
-                            </div>
-                            <div class="popup-option-group">
-                                <input type="checkbox" id="popup-gen-uppercase" checked>
-                                <label for="popup-gen-uppercase">A-Z</label>
-                            </div>
-                            <div class="popup-option-group">
-                                <input type="checkbox" id="popup-gen-digits" checked>
-                                <label for="popup-gen-digits">0-9</label>
-                            </div>
-                            <div class="popup-option-group">
-                                <input type="checkbox" id="popup-gen-symbols" checked>
-                                <label for="popup-gen-symbols">!@#</label>
-                            </div>
-                        </div>
+                        <div id="popup-strength-feedback"></div>
                     </div>
-                    <!-- End Generator Options -->
+                    <!-- End Popup Strength Display -->
 
-                    <label for="masterPasswordSave" style="margin-top:15px;">Confirm Master Password:</label> <!-- Add margin -->
+                    <!-- Generator Options -->
+                    <div class="popup-generator-options">
+                         <h4>Options</h4>
+                         <div class="popup-length-control"> <label for="popup-gen-length">Len:</label> <input type="range" id="popup-gen-length" name="popup-gen-length" min="8" max="64" value="16"> <span class="popup-length-display" id="popup-gen-length-value">16</span> </div>
+                         <div class="popup-char-options">
+                             <div class="popup-option-group"> <input type="checkbox" id="popup-gen-lowercase" checked> <label for="popup-gen-lowercase">a-z</label> </div>
+                             <div class="popup-option-group"> <input type="checkbox" id="popup-gen-uppercase" checked> <label for="popup-gen-uppercase">A-Z</label> </div>
+                             <div class="popup-option-group"> <input type="checkbox" id="popup-gen-digits" checked> <label for="popup-gen-digits">0-9</label> </div>
+                             <div class="popup-option-group"> <input type="checkbox" id="popup-gen-symbols" checked> <label for="popup-gen-symbols">!@#</label> </div>
+                         </div>
+                     </div>
+
+                    <label for="masterPasswordSave" style="margin-top:5px;">Confirm Master Password:</label> <!-- Less margin -->
                     <input type="password" id="masterPasswordSave" placeholder="Enter Master Password to save" required>
                     <div class="form-buttons">
                         <button id="save-password-btn" class="btn btn-primary">Encrypt & Save</button>
@@ -199,6 +230,9 @@
             </div>
         </div>
     </div>
+    <!-- Include zxcvbn library FIRST -->
+    <script src="zxcvbn.js"></script>
+    <!-- Then other helpers and main popup script -->
     <script src="crypto-helpers.js"></script>
     <script src="popup.js"></script>
 </body>

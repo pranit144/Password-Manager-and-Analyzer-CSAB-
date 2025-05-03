@@ -10,6 +10,7 @@ import traceback # For detailed error logging
 import secrets  # Use secrets for cryptographic randomness
 import string   # For character sets
 import random   # For shuffling (secrets doesn't have shuffle)
+from datetime import timedelta # ** IMPORT timedelta **
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
@@ -19,7 +20,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from dotenv import load_dotenv
 import google.generativeai as genai
-
+from zxcvbn import zxcvbn
 load_dotenv()
 
 app = Flask(__name__)
@@ -27,6 +28,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'default_secret_key_please_change')
 app.config['ENV'] = os.environ.get('FLASK_ENV', 'production')
 app.config['DEBUG'] = app.config['ENV'] == 'development'
+
+# ** SET PERMANENT SESSION LIFETIME (e.g., 7 days) **
+# This applies *only* when 'Remember Me' is checked.
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 
 # --- Supabase Configuration ---
@@ -92,7 +97,7 @@ def derive_key(master_password: str, salt_or_email: str) -> bytes:
     # Log the standard Base64 representation for easier comparison with JS console log
     try:
         raw_key_standard_b64 = base64.b64encode(key_bytes).decode('utf-8')
-        print(f"DEBUG: PY Derived Key (Raw -> Standard Base64): {raw_key_standard_b64}")
+        # print(f"DEBUG: PY Derived Key (Raw -> Standard Base64): {raw_key_standard_b64}") # Keep commented unless debugging
     except Exception as log_e:
         print(f"DEBUG: Error logging derived key: {log_e}")
     # --- END LOGGING ---
@@ -258,6 +263,9 @@ def login():
     if current_user.is_authenticated: return redirect(url_for('add_password_page'))
     if request.method == 'POST':
         email = request.form.get('email', '').strip(); password = request.form.get('password', '')
+        # ** GET REMEMBER ME VALUE **
+        remember_me = 'remember' in request.form # True if checkbox was ticked
+
         if not email or not password:
             flash('Email and Master Password are required.', 'danger'); return render_template('login.html'), 400
         try:
@@ -266,7 +274,10 @@ def login():
                 user_data = response.data; stored_hash = user_data['password_hash']
                 if bcrypt.check_password_hash(stored_hash, password):
                     user_obj = User(id=user_data['id'], email=user_data['email'])
-                    login_user(user_obj)
+                    # ** PASS REMEMBER ME TO login_user **
+                    login_user(user_obj, remember=remember_me)
+                    # Flask-Login sets session.permanent based on 'remember' flag
+
                     session['user_data'] = {'id': user_data['id'], 'email': user_data['email']}
                     # Derive key and store URL-safe Base64 version in session
                     derived_key_b64url = derive_key(password, user_data['email'])
@@ -444,8 +455,67 @@ def generate_password_api():
         traceback.print_exc()
         return jsonify({'error': 'Server error generating password.'}), 500
 
+# --- Helper for zxcvbn analysis ---
+# (Keep the import from zxcvbn at the top)
+# from zxcvbn import zxcvbn # Already should be there
+
+def get_zxcvbn_feedback(password):
+    """Analyzes password using zxcvbn and formats feedback."""
+    results = zxcvbn(password)
+    score = results['score'] # Score 0-4
+    feedback_items = []
+
+    # Map score to assessment
+    assessment_map = {
+        0: "Very Weak", 1: "Weak", 2: "Medium", 3: "Strong", 4: "Very Strong"
+    }
+    assessment = assessment_map.get(score, "Unknown")
+
+    # Add warning if present
+    if results['feedback']['warning']:
+        feedback_items.append(f"Warning: {results['feedback']['warning']}")
+    # Add suggestions
+    if results['feedback']['suggestions']:
+        feedback_items.extend([f"Suggestion: {s}" for s in results['feedback']['suggestions']])
+
+    # Add a generic suggestion if feedback is empty but score is low
+    if not feedback_items and score < 3:
+        feedback_items.append("Suggestion: Add more variety (uppercase, numbers, symbols) or increase length.")
+    elif not feedback_items and score >= 3:
+         feedback_items.append("Suggestion: Looks reasonably strong!")
+
+
+    # Return without calc_time which is not JSON serializable
+    return {
+        'score': score, # 0-4
+        'assessment': assessment,
+        'feedback': feedback_items,
+        'guesses': results['guesses'], # Optional: include estimated guesses if needed
+    }
+
+@app.route('/api/strength_check', methods=['POST'])
+@login_required
+def strength_check_api():
+    """Receives a password and returns its zxcvbn strength analysis."""
+    data = request.get_json()
+    if not data or 'password' not in data:
+        return jsonify({'error': 'Password key missing in request body.'}), 400
+
+    password = data['password']
+    if not password: # Handle empty password case
+        return jsonify({'score': 0, 'assessment': 'Very Weak', 'feedback': ['Suggestion: Please enter a password.']})
+
+    try:
+        analysis = get_zxcvbn_feedback(password)
+        return jsonify(analysis)
+    except Exception as e:
+        print(f"Error during zxcvbn strength check: {e}")
+        traceback.print_exc()
+        # Return a generic low score on error, rather than crashing
+        return jsonify({'score': 0, 'assessment': 'Error', 'feedback': ['Error analyzing password strength.']}), 500
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=app.config['DEBUG'])
-
 # --- END OF FILE app.py ---

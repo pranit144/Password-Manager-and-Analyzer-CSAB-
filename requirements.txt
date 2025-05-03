@@ -9,3 +9,4 @@ flask-wtf==1.2.1 # Already present, good
 flask-login # Add Flask-Login
 supabase
 argon2-cffi # Optional but recommended for KDF later
+zxcvbn-python
