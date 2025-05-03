@@ -161,12 +161,20 @@
             if (!feedbackArray || feedbackArray.length === 0) return '<div class="feedback-item tip">No specific issues found.</div>';
             let html = '<div class="feedback-section">';
             feedbackArray.forEach(fb => {
-                let itemClass = 'feedback-item'; let text = fb;
-                if (fb.startsWith('Issue:')) { itemClass += ' issue'; text = fb.substring(6).trim(); }
-                else if (fb.startsWith('Tip:')) { itemClass += ' tip'; text = fb.substring(4).trim(); }
-                else { itemClass += ' issue'; } // Default to issue style
-                 html += `<div class="${itemClass}">${escapeHtml(text)}</div>`;
-            }); html += '</div>'; return html;
+                let itemClass = 'feedback-item'; // Default to neutral/tip style if no prefix
+                let text = fb;
+                // Check for prefixes (case-insensitive)
+                if (fb.toLowerCase().startsWith('issue:') || fb.toLowerCase().startsWith('warning:')) {
+                    itemClass += ' issue'; // Apply issue style
+                    text = fb.substring(fb.indexOf(':') + 1).trim(); // Get text after colon
+                } else if (fb.toLowerCase().startsWith('tip:') || fb.toLowerCase().startsWith('suggestion:')) {
+                    itemClass += ' tip'; // Apply tip style
+                    text = fb.substring(fb.indexOf(':') + 1).trim(); // Get text after colon
+                }
+                html += `<div class="${itemClass}">${escapeHtml(text)}</div>`;
+            });
+            html += '</div>';
+            return html;
         }
 
         // --- DOMContentLoaded ---
@@ -279,19 +287,20 @@
                 } finally { allPasswordsLoadingEl.style.display = 'none'; analyseAllBtn.disabled = false; }
             });
 
-             function displayAllAnalysisResults(results) {
+            function displayAllAnalysisResults(results) {
                 passwordAnalysisListBody.innerHTML = ''; allPasswordsAnalysisEl.style.display = 'block';
                 if (results.length === 0) { passwordAnalysisListBody.innerHTML = '<tr><td colspan="5">No results.</td></tr>'; return; }
-                 results.forEach((item) => {
-                     const row = passwordAnalysisListBody.insertRow(); const score = item.strength || 0;
-                     const strengthClass = getStrengthClass(score); const feedbackHtml = formatFeedbackHtml(item.feedback);
-                     row.innerHTML = `
+                results.forEach((item) => {
+                    const row = passwordAnalysisListBody.insertRow(); const score = item.strength || 0;
+                    const strengthClass = getStrengthClass(score); // You have this helper
+                    const feedbackHtml = formatFeedbackHtml(item.feedback); // Use updated formatter
+                    row.innerHTML = `
                         <td>${escapeHtml(item.service)}</td><td>${escapeHtml(item.username)}</td>
-                        <td><div class="strength-bar" title="Strength: ${score}/5"><div class="strength-indicator ${strengthClass}" style="width: ${(score/5)*100}%"></div></div></td>
+                        <td><div class="strength-bar-table" title="Strength: ${score}/5"><div class="strength-indicator-table ${strengthClass}" style="width: ${(score/5)*100}%"></div></div></td>
                         <td>${escapeHtml(item.assessment || 'N/A')}</td><td>${feedbackHtml}</td>
                     `;
-                 });
-             }
+                });
+            }
         }); // End DOMContentLoaded
     </script>
 </body>

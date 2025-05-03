@@ -13,6 +13,10 @@
              {% if current_user.is_authenticated %}
                  <a href="{{ url_for('logout') }}" class="logout-link">Logout ({{ current_user.email }})</a>
              {% endif %}
+             <button id="theme-toggle" title="Toggle light/dark theme">
+                <span class="icon-sun">☀️</span>
+                <span class="icon-moon" style="display:none;">🌙</span>
+            </button>    
             <nav>
                 <ul>
                     <li><a href="{{ url_for('add_password_page') }}" class="active">Add Password</a></li>
@@ -109,7 +113,36 @@
         async function encryptData(b,d){try{const i=crypto.getRandomValues(new Uint8Array(12));const s=JSON.stringify(d);const e=new TextEncoder().encode(s);const k=await crypto.subtle.importKey("raw",b,{name:"AES-GCM",length:256},!1,["encrypt"]);const c=await crypto.subtle.encrypt({name:"AES-GCM",iv:i},k,e);const o=new Uint8Array(i.length+c.byteLength);o.set(i,0);o.set(new Uint8Array(c),i.length);return arrayBufferToBase64(o);}catch(r){console.error("Encrypt fail:",r);throw new Error("Could not encrypt.");}}
         function arrayBufferToBase64(b){let s='';const y=new Uint8Array(b);const l=y.byteLength;for(let i=0;i<l;i++){s+=String.fromCharCode(y[i]);}return window.btoa(s);}
         function base64ToArrayBuffer(b){try{const s=window.atob(b);const l=s.length;const y=new Uint8Array(l);for(let i=0;i<l;i++){y[i]=s.charCodeAt(i);}return y.buffer;}catch(e){console.error("B64 decode fail:",e);throw new Error("Invalid Base64.");}}
+            // --- Theme Toggler ---
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const sunIcon = themeToggleBtn?.querySelector('.icon-sun');
+    const moonIcon = themeToggleBtn?.querySelector('.icon-moon');
+    const currentTheme = localStorage.getItem('theme') || 'light'; // Default to light
 
+    function applyTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        if (sunIcon && moonIcon) {
+            if (theme === 'dark') {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'inline';
+            } else {
+                sunIcon.style.display = 'inline';
+                moonIcon.style.display = 'none';
+            }
+        }
+    }
+
+    // Apply initial theme on load
+    applyTheme(currentTheme);
+
+    // Toggle theme on button click
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        });
+    }
         // --- Strength Meter Helper ---
         function getStrengthClassFromScore(score) { // Keep this helper
              const classes = ['very-weak', 'weak', 'medium', 'strong', 'very-strong'];
