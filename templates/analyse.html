@@ -6,97 +6,608 @@
     <title>Analyse Passwords - Secure Password Manager</title>
     <!-- Ensure correct path to your CSS file -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Add Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+            --bg-card: #ffffff;
+            --border-color: #e5e7eb;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: #f3f4f6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .llm-badge {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 1rem;
+            padding: 0;
+            margin: 1rem 0 0;
+            list-style: none;
+        }
+
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: var(--transition);
+        }
+
+        nav a:hover, nav a.active {
+            color: var(--primary-color);
+            background: #f0f9ff;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input[type="password"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .toggle-button {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .loading-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .analysis-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 1.5rem 0;
+        }
+
+        .analysis-table th,
+        .analysis-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .analysis-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .strength-bar {
+            background: #e5e7eb;
+            height: 0.5rem;
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        .strength-indicator {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .strength-indicator.very-weak { background: var(--danger-color); }
+        .strength-indicator.weak { background: #f97316; }
+        .strength-indicator.medium { background: var(--warning-color); }
+        .strength-indicator.strong { background: #84cc16; }
+        .strength-indicator.very-strong { background: var(--success-color); }
+
+        .feedback-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .feedback-item.issue {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .feedback-item.tip {
+            background: #e0f2fe;
+            color: #075985;
+        }
+
+        .breach-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        .breach-indicator.safe {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .breach-indicator.pwned {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .breach-indicator.error {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .logout-link {
+            float: right;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: var(--transition);
+        }
+
+        .logout-link:hover {
+            color: var(--primary-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .analysis-table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            nav ul {
+                flex-direction: column;
+            }
+
+            nav a {
+                display: block;
+            }
+        }
+
+        .header-content {
+            width: 100%;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .user-email {
+            color: var(--text-secondary);
+            margin-right: 0.5rem;
+        }
+
+        .logout-text {
+            color: var(--danger-color);
+        }
+
+        .card-header {
+            margin-bottom: 2rem;
+        }
+
+        .card-description {
+            color: var(--text-secondary);
+            margin: 0.5rem 0 0;
+            font-size: 0.95rem;
+        }
+
+        .analysis-form {
+            max-width: 600px;
+        }
+
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-start;
+            gap: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+        }
+
+        .btn-secondary {
+            background: #4b5563;
+        }
+
+        .card-actions {
+            margin: 1.5rem 0;
+        }
+
+        .result-container {
+            background: #f8fafc;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: #f8fafc;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .password-cell {
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        .assessment-cell {
+            font-weight: 500;
+        }
+
+        .feedback-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .status-message {
+            margin: 1rem 0;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            background: #f0f9ff;
+            color: var(--primary-color);
+        }
+
+        /* Enhanced Loading Animation */
+        .loading-indicator {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 0.5rem;
+        }
+
+        .loading-indicator p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        /* Improved Table Styles */
+        .analysis-table th:first-child,
+        .analysis-table td:first-child {
+            border-top-left-radius: 0.5rem;
+            border-bottom-left-radius: 0.5rem;
+        }
+
+        .analysis-table th:last-child,
+        .analysis-table td:last-child {
+            border-top-right-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+
+        /* Strength Bar Enhancements */
+        .strength-bar-table {
+            width: 100%;
+            height: 0.375rem;
+            background: #e5e7eb;
+            border-radius: 0.25rem;
+            overflow: hidden;
+        }
+
+        .strength-indicator-table {
+            height: 100%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        /* Responsive Enhancements */
+        @media (max-width: 768px) {
+            .header-top {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .logout-link {
+                float: none;
+                display: inline-block;
+                margin-top: 0.5rem;
+            }
+
+            .card {
+                padding: 1.25rem;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .analysis-table {
+                font-size: 0.875rem;
+            }
+
+            .analysis-table th,
+            .analysis-table td {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Dark Mode Support (if needed) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-card: #1f2937;
+                --text-primary: #f3f4f6;
+                --text-secondary: #9ca3af;
+                --border-color: #374151;
+            }
+
+            body {
+                background: #111827;
+            }
+
+            .card {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            }
+
+            input[type="password"] {
+                background: #374151;
+                color: #f3f4f6;
+            }
+
+            .analysis-table th {
+                background: #374151;
+            }
+
+            .result-container,
+            .table-container {
+                background: #1f2937;
+            }
+
+            .status-message {
+                background: #1e3a8a;
+                color: #93c5fd;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Password Analysis <span class="llm-badge">AI Insights</span></h1>
-             {% if current_user.is_authenticated %}
-                 <a href="{{ url_for('logout') }}" class="logout-link">Logout ({{ current_user.email }})</a>
-             {% endif %}
-             <!-- Optional: Add Theme Toggle if desired on this page -->
-             <!-- <button id="theme-toggle" title="Toggle light/dark theme">...</button> -->
-            <nav>
-                <ul>
-                    <li><a href="{{ url_for('add_password_page') }}">Add Password</a></li>
-                    <li><a href="{{ url_for('storage') }}">View Passwords</a></li>
-                    <li><a href="{{ url_for('analyse') }}" class="active">Analyse Passwords</a></li>
-                </ul>
-            </nav>
+            <div class="header-content">
+                <div class="header-top">
+                    <h1>Password Analysis <span class="llm-badge">AI Insights</span></h1>
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('logout') }}" class="logout-link">
+                            <span class="user-email">{{ current_user.email }}</span>
+                            <span class="logout-text">Logout</span>
+                        </a>
+                    {% endif %}
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="{{ url_for('add_password_page') }}">Add Password</a></li>
+                        <li><a href="{{ url_for('storage') }}">View Passwords</a></li>
+                        <li><a href="{{ url_for('analyse') }}" class="active">Analyse Passwords</a></li>
+                    </ul>
+                </nav>
+            </div>
         </header>
 
         <main>
             <!-- Single Password Analysis Card -->
-            <section class="card">
-                <h2>Analyse a Single Password</h2>
-                <p>Enter a password below to get an instant strength analysis using AI insights and check if it has been compromised in known data breaches. The password itself is not stored or sent after analysis.</p>
-                <form id="analyse-form">
+            <section class="card analysis-card">
+                <div class="card-header">
+                    <h2>Analyse a Single Password</h2>
+                    <p class="card-description">Enter a password below to get an instant strength analysis using AI insights and check if it has been compromised in known data breaches. The password itself is not stored or sent after analysis.</p>
+                </div>
+                <form id="analyse-form" class="analysis-form">
                     <div class="form-group">
                         <label for="analyse-password">Password to Analyse:</label>
-                        <input type="password" id="analyse-password" name="analyse-password" required autocomplete="new-password">
-                        <button type="button" id="toggle-analyse-password" class="toggle-button" title="Show/hide password">Show</button>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="analyse-password" name="analyse-password" required autocomplete="new-password" placeholder="Enter password to analyse">
+                            <button type="button" id="toggle-analyse-password" class="toggle-button" title="Show/hide password">Show</button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <button type="submit" class="btn">Analyse Password</button>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Analyse Password</button>
                     </div>
                 </form>
 
-                <div id="single-loading" class="loading-indicator" style="display: none;"> <!-- Initially hidden -->
+                <div id="single-loading" class="loading-indicator" style="display: none;">
                     <div class="spinner"></div>
-                    <p>Analysing...</p>
+                    <p>Analysing your password...</p>
                 </div>
 
                 <div id="single-analysis-result" class="analysis-result" style="display: none;">
                     <h3>Analysis Result</h3>
-                    <table class="analysis-table">
-                        <thead>
-                            <tr>
-                                <th>Password</th>
-                                <th>Strength Bar</th>
-                                <th>Assessment</th>
-                                <th>AI Insights & Suggestions</th>
-                                <th>Breach Status</th> <!-- Added Breach Column -->
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td id="password-value">*****</td>
-                                <td>
-                                    <div class="strength-bar">
-                                        <div id="strength-indicator" class="strength-indicator"></div>
-                                    </div>
-                                </td>
-                                <td id="strength-text">Medium</td>
-                                <td id="feedback-cell">
-                                    <div id="feedback-list">
-                                        <!-- Feedback items populated by JS -->
-                                    </div>
-                                </td>
-                                <!-- Breach Status Cell -->
-                                <td class="breach-cell">
-                                     <span id="single-breach-indicator" class="breach-indicator"></span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="result-container">
+                        <table class="analysis-table">
+                            <thead>
+                                <tr>
+                                    <th>Password</th>
+                                    <th>Strength</th>
+                                    <th>Assessment</th>
+                                    <th>AI Insights & Suggestions</th>
+                                    <th>Breach Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td id="password-value" class="password-cell">*****</td>
+                                    <td>
+                                        <div class="strength-bar">
+                                            <div id="strength-indicator" class="strength-indicator"></div>
+                                        </div>
+                                    </td>
+                                    <td id="strength-text" class="assessment-cell">Medium</td>
+                                    <td id="feedback-cell">
+                                        <div id="feedback-list" class="feedback-list"></div>
+                                    </td>
+                                    <td class="breach-cell">
+                                        <span id="single-breach-indicator" class="breach-indicator"></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
             <!-- All Stored Passwords Analysis Card -->
-            <section class="card">
-                <h2>Analyse All Stored Credentials</h2>
-                <p>Decrypt and analyse all your stored credentials to identify potential weaknesses and check for compromises across your accounts. This may take some time depending on the number of credentials.</p>
-                <button id="analyse-all-btn" class="btn btn-secondary">Load & Analyse All Stored Credentials</button>
+            <section class="card analysis-card">
+                <div class="card-header">
+                    <h2>Analyse All Stored Credentials</h2>
+                    <p class="card-description">Decrypt and analyse all your stored credentials to identify potential weaknesses and check for compromises across your accounts. This may take some time depending on the number of credentials.</p>
+                </div>
+                <div class="card-actions">
+                    <button id="analyse-all-btn" class="btn btn-secondary">Load & Analyse All Stored Credentials</button>
+                </div>
 
-                <div id="all-passwords-loading" class="loading-indicator" style="display: none;"> <!-- Initially hidden -->
+                <div id="all-passwords-loading" class="loading-indicator" style="display: none;">
                     <div class="spinner"></div>
                     <p>Loading, decrypting, and analysing all credentials...</p>
                 </div>
-                 <div id="all-analysis-status" class="status-message"></div>
 
-                <div id="all-passwords-analysis" style="display: none; margin-top: 20px;">
-                     <h3>Stored Credentials Analysis</h3>
-                    <div style="overflow-x: auto;"> <!-- Ensure table is scrollable if needed -->
+                <div id="all-analysis-status" class="status-message"></div>
+
+                <div id="all-passwords-analysis" class="analysis-result" style="display: none;">
+                    <h3>Stored Credentials Analysis</h3>
+                    <div class="table-container">
                         <table class="analysis-table" id="password-analysis-table">
                             <thead>
                                 <tr>
@@ -105,12 +616,10 @@
                                     <th>Strength</th>
                                     <th>Assessment</th>
                                     <th>AI Insights & Suggestions</th>
-                                    <th>Breach Status</th> <!-- Corrected Column Header -->
+                                    <th>Breach Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="password-analysis-list">
-                                <!-- Analysis entries populated by JS -->
-                            </tbody>
+                            <tbody id="password-analysis-list"></tbody>
                         </table>
                     </div>
                 </div>
@@ -118,13 +627,10 @@
         </main>
 
         <footer>
-            <p>Secure Password Manager - E2EE Demo</p>
+            <p>Secure Password Manager - End-to-End Encrypted Password Management</p>
         </footer>
     </div>
 
-    <!-- Include zxcvbn library FIRST if used for single analysis, otherwise only crypto helpers needed -->
-    <!-- <script src="{{ url_for('static', filename='js/zxcvbn.js') }}"></script> -->
-    <!-- Include Crypto Helpers (make sure path is correct) -->
     <script src="{{ url_for('static', filename='js/crypto-helpers.js') }}"></script>
 
     <script>
