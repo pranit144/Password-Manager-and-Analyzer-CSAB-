@@ -5,491 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Password - Secure Password Manager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            --text-primary: #1f2937;
-            --text-secondary: #4b5563;
-            --bg-card: #ffffff;
-            --border-color: #e5e7eb;
-            --transition: all 0.3s ease;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            line-height: 1.6;
-            color: var(--text-primary);
-            background: #f3f4f6;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        header {
-            background: var(--bg-card);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .header-content {
-            width: 100%;
-        }
-
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin: 0;
-        }
-
-        nav ul {
-            display: flex;
-            gap: 1rem;
-            padding: 0;
-            margin: 1rem 0 0;
-            list-style: none;
-        }
-
-        nav a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            transition: var(--transition);
-        }
-
-        nav a:hover, nav a.active {
-            color: var(--primary-color);
-            background: #f0f9ff;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            transition: var(--transition);
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            color: var(--text-primary);
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border-color);
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            border-color: var(--primary-color);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .password-input-group {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .toggle-button {
-            position: absolute;
-            right: 7.5rem;
-            padding: 0.5rem;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-
-        .generate-button {
-            position: absolute;
-            right: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: none;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: var(--transition);
-        }
-
-        .generate-button:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-
-        .password-strength-area {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: #f8fafc;
-            border-radius: 0.5rem;
-        }
-
-        .strength-meter-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .strength-label {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            min-width: 4rem;
-        }
-
-        .strength-bar {
-            flex-grow: 1;
-            height: 0.5rem;
-            background: #e5e7eb;
-            border-radius: 1rem;
-            overflow: hidden;
-        }
-
-        .strength-indicator {
-            height: 100%;
-            width: 0;
-            transition: width 0.3s ease, background-color 0.3s ease;
-        }
-
-        .strength-indicator.very-weak { background: var(--danger-color); }
-        .strength-indicator.weak { background: #f97316; }
-        .strength-indicator.medium { background: var(--warning-color); }
-        .strength-indicator.strong { background: #84cc16; }
-        .strength-indicator.very-strong { background: var(--success-color); }
-
-        .generator-options {
-            margin-top: 1.5rem;
-            padding: 1.5rem;
-            background: #f8fafc;
-            border-radius: 0.5rem;
-            border: 1px solid var(--border-color);
-        }
-
-        .generator-options h4 {
-            margin: 0 0 1rem;
-            color: var(--text-primary);
-        }
-
-        .length-control {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .length-control input[type="range"] {
-            flex-grow: 1;
-        }
-
-        .length-display {
-            min-width: 2.5rem;
-            text-align: center;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .char-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-
-        .option-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .option-group input[type="checkbox"] {
-            width: 1rem;
-            height: 1rem;
-            border-radius: 0.25rem;
-            border: 2px solid var(--border-color);
-            cursor: pointer;
-        }
-
-        .option-group label {
-            margin: 0;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.75rem 1.5rem;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
-        }
-
-        .message {
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-        }
-
-        .message.success {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .message.error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .breach-status-area {
-            margin-top: 1rem;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            background: #f8fafc;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .breach-label {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        .breach-indicator {
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .breach-indicator.safe {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .breach-indicator.pwned {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .breach-indicator.checking {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        #theme-toggle {
-            padding: 0.5rem;
-            background: none;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        #theme-toggle:hover {
-            border-color: var(--primary-color);
-        }
-
-        .logout-link {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.875rem;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .logout-link:hover {
-            color: var(--primary-color);
-        }
-
-        footer {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-
-            .card {
-                padding: 1.5rem;
-            }
-
-            .header-top {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-
-            nav ul {
-                flex-direction: column;
-            }
-
-            nav a {
-                display: block;
-            }
-
-            .char-options {
-                grid-template-columns: 1fr;
-            }
-
-            .password-input-group {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .toggle-button,
-            .generate-button {
-                position: static;
-                margin-top: 0.5rem;
-            }
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-card: #1f2937;
-                --text-primary: #f3f4f6;
-                --text-secondary: #9ca3af;
-                --border-color: #374151;
-            }
-
-            body {
-                background: #111827;
-            }
-
-            input[type="text"],
-            input[type="password"] {
-                background: #374151;
-                color: #f3f4f6;
-            }
-
-            .password-strength-area,
-            .generator-options,
-            .breach-status-area {
-                background: #374151;
-            }
-
-            .card {
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-            }
-
-            .message.success {
-                background: #064e3b;
-                color: #6ee7b7;
-            }
-
-            .message.error {
-                background: #7f1d1d;
-                color: #fecaca;
-            }
-
-            .breach-indicator.safe {
-                background: #064e3b;
-                color: #6ee7b7;
-            }
-
-            .breach-indicator.pwned {
-                background: #7f1d1d;
-                color: #fecaca;
-            }
-
-            .breach-indicator.checking {
-                background: #1e3a8a;
-                color: #93c5fd;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="header-content">
-                <div class="header-top">
-                    <h1>Add New Password</h1>
-                    <div class="header-controls">
-                        <button id="theme-toggle" title="Toggle light/dark theme">
-                            <span class="icon-sun">☀️</span>
-                            <span class="icon-moon" style="display:none;">🌙</span>
-                        </button>
-                        {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('logout') }}" class="logout-link">
-                                <span class="user-email">{{ current_user.email }}</span>
-                                <span class="logout-text">Logout</span>
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="{{ url_for('add_password_page') }}" class="active">Add Password</a></li>
-                        <li><a href="{{ url_for('storage') }}">View Passwords</a></li>
-                        <li><a href="{{ url_for('analyse') }}">Analyse Passwords</a></li>
-                    </ul>
-                </nav>
-            </div>
+            <h1>Secure Password Manager</h1>
+             {% if current_user.is_authenticated %}
+                 <a href="{{ url_for('logout') }}" class="logout-link">Logout ({{ current_user.email }})</a>
+             {% endif %}
+             <div class="header-controls"> <!-- Moved controls here -->
+                 <button id="theme-toggle" title="Toggle light/dark theme">
+                    <span class="icon-sun">☀️</span>
+                    <span class="icon-moon" style="display:none;">🌙</span>
+                </button>
+             </div>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('add_password_page') }}" class="active">Add Password</a></li>
+                    <li><a href="{{ url_for('storage') }}">View Passwords</a></li>
+                    <li><a href="{{ url_for('analyse') }}">Analyse Passwords</a></li>
+                </ul>
+            </nav>
         </header>
 
         <main>
@@ -497,38 +33,45 @@
                 <h2>Add New Credential</h2>
                 <form id="password-form">
                     <div class="form-group">
-                        <label for="service">Service/Website</label>
-                        <input type="text" id="service" name="service" required placeholder="Enter service or website name">
+                        <label for="service">Service/Website:</label>
+                        <input type="text" id="service" name="service" required>
                     </div>
                     <div class="form-group">
-                        <label for="username">Username/Email</label>
-                        <input type="text" id="username" name="username" required placeholder="Enter username or email">
+                        <label for="username">Username/Email:</label>
+                        <input type="text" id="username" name="username" required>
                     </div>
                     <div class="form-group">
-                        <label for="password">Password</label>
+                        <label for="password">Password:</label>
                         <div class="password-input-group">
-                            <input type="password" id="password" name="password" required autocomplete="new-password" placeholder="Enter password">
+                            <input type="password" id="password" name="password" required autocomplete="new-password" style="padding-right: 100px;"> <!-- Adjusted padding -->
                             <button type="button" id="toggle-password" class="toggle-button" title="Show/hide password">Show</button>
-                            <button type="button" id="generate-password-btn" class="generate-button">Generate</button>
+                            <button type="button" id="generate-password-btn" class="btn btn-outline-secondary btn-sm generate-button">Generate</button>
                         </div>
                     </div>
 
-                    <div id="password-strength-area" class="password-strength-area" style="display: none;">
+                    <!-- Password Strength & Breach Display Area -->
+                    <div id="password-strength-area" class="password-strength-area" style="display: none;"> <!-- Initially hidden -->
                         <div class="strength-meter-container">
-                            <span class="strength-label">Strength:</span>
-                            <div class="strength-bar">
-                                <div id="strength-indicator" class="strength-indicator"></div>
-                            </div>
+                             <span class="strength-label" id="strength-text-label">Strength:</span>
+                             <div class="strength-bar">
+                                 <div id="strength-indicator" class="strength-indicator"></div>
+                             </div>
                         </div>
-                        <div id="password-strength-feedback"></div>
-                        <div id="password-breach-status" class="breach-status-area" style="display: none;">
-                            <span class="breach-label">Breach Check:</span>
-                            <span id="breach-status-indicator" class="breach-indicator checking">Checking...</span>
+                        <div id="password-strength-feedback">
+                            <!-- Strength feedback messages will appear here -->
                         </div>
+                        <!-- ** NEW: Breach Status ** -->
+                        <div id="password-breach-status" class="breach-status-area" style="display: none; margin-top: 10px;">
+                             <span class="breach-label">Breach Check:</span>
+                             <span id="breach-status-indicator" class="breach-indicator">Checking...</span>
+                        </div>
+                        <!-- ** END Breach Status ** -->
                     </div>
+                    <!-- End Password Strength & Breach Display Area -->
 
-                    <div id="generator-options" class="generator-options" style="display: none;">
-                        <h4>Password Generator Options</h4>
+                    <!-- Generator Options -->
+                    <div id="generator-options" class="generator-options">
+                        <h4>Generator Options</h4>
                         <div class="length-control">
                             <label for="gen-length">Length:</label>
                             <input type="range" id="gen-length" name="gen-length" min="8" max="64" value="16">
@@ -553,22 +96,26 @@
                             </div>
                         </div>
                     </div>
+                    <!-- End Generator Options -->
 
                     <div class="form-group">
                         <button type="submit" class="btn">Encrypt & Save</button>
                     </div>
                 </form>
-                <div id="message" class="message"></div>
+                <div id="message" class="message"></div> <!-- For success/error messages -->
             </section>
         </main>
 
         <footer>
-            <p>Secure Password Manager - End-to-End Encrypted Password Management</p>
+            <p>Secure Password Manager - E2EE Demo</p>
         </footer>
     </div>
 
+    <!-- Include zxcvbn library FIRST -->
     <script src="{{ url_for('static', filename='js/zxcvbn.js') }}"></script>
+    <!-- Include crypto helpers SECOND (provides HIBP check) -->
     <script src="{{ url_for('static', filename='js/crypto-helpers.js') }}"></script>
+    <!-- Your page-specific script LAST -->
     <script>
         // --- E2EE Helper Functions (Encryption/Decryption - Keep for saving) ---
         function base64UrlDecode(b64url){let b64=b64url.replace(/-/g,'+').replace(/_/g,'/');while(b64.length%4){b64+='=';}return base64ToArrayBuffer(b64);}

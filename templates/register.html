@@ -5,245 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Secure Password Manager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            --text-primary: #1f2937;
-            --text-secondary: #4b5563;
-            --bg-card: #ffffff;
-            --border-color: #e5e7eb;
-            --transition: all 0.3s ease;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .auth-container {
-            background: var(--bg-card);
-            max-width: 400px;
-            width: 100%;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .auth-header h2 {
-            color: var(--text-primary);
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            color: var(--text-primary);
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border-color);
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            transition: var(--transition);
-            background: white;
-        }
-
-        input[type="email"]:focus,
-        input[type="password"]:focus {
-            border-color: var(--primary-color);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .password-rules {
-            margin-top: 0.5rem;
-            padding: 0.75rem;
-            background: #f8fafc;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            border-left: 3px solid var(--warning-color);
-        }
-
-        .password-rules strong {
-            color: var(--text-primary);
-            display: block;
-            margin-bottom: 0.25rem;
-        }
-
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 0.875rem;
-            background: var(--success-color);
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn:hover {
-            background: #059669;
-            transform: translateY(-1px);
-        }
-
-        .alert {
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .alert-danger {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-
-        .alert-success {
-            background: #dcfce7;
-            color: #166534;
-            border: 1px solid #bbf7d0;
-        }
-
-        .alert-warning {
-            background: #fef3c7;
-            color: #92400e;
-            border: 1px solid #fde68a;
-        }
-
-        .alert-info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #bfdbfe;
-        }
-
-        .auth-footer {
-            text-align: center;
-            margin-top: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        .auth-footer a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        .auth-footer a:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 480px) {
-            .auth-container {
-                padding: 1.5rem;
-            }
-
-            .auth-header h2 {
-                font-size: 1.5rem;
-            }
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-card: #1f2937;
-                --text-primary: #f3f4f6;
-                --text-secondary: #9ca3af;
-                --border-color: #374151;
-            }
-
-            body {
-                background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-            }
-
-            input[type="email"],
-            input[type="password"] {
-                background: #374151;
-                color: #f3f4f6;
-            }
-
-            .password-rules {
-                background: #374151;
-                border-left-color: var(--warning-color);
-            }
-
-            .auth-container {
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-            }
-        }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 400px; margin: 40px auto; padding: 30px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; color: #555; }
+        input[type="email"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
+        input:focus { border-color: #80bdff; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
+        .btn { display: block; width: 100%; background-color: #28a745; color: white; padding: 12px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: background-color 0.2s ease; }
+        .btn:hover { background-color: #218838; }
+        .alert { padding: 12px 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid transparent; font-size: 0.95rem; }
+        .alert-danger { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .alert-success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .alert-warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
+        .alert-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .text-center { text-align: center; }
+        .mt-3 { margin-top: 1.5rem; }
+        .link { color: #007bff; text-decoration: none; }
+        .link:hover { text-decoration: underline; }
+        .password-rules { font-size: 0.85rem; color: #6c757d; margin-top: -10px; margin-bottom: 15px; }
+  
     </style>
 </head>
-<body>
-    <div class="auth-container">
-        <div class="auth-header">
-            <h2>Create Account</h2>
-        </div>
+<body class="auth-body">
+    <h2>Create Account</h2>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    {% set alert_class = 'alert-' + category if category in ['danger', 'success', 'warning'] else 'alert-info' %}
-                    <div class="alert {{ alert_class }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+     {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                 {% set alert_class = 'alert-' + category if category in ['danger', 'success', 'warning'] else 'alert-info' %}
+                <div class="alert {{ alert_class }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-        <form method="POST" action="{{ url_for('register') }}">
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required autocomplete="email" placeholder="Enter your email">
-            </div>
-            <div class="form-group">
-                <label for="password">Master Password</label>
-                <input type="password" id="password" name="password" required autocomplete="new-password" placeholder="Create a strong master password" aria-describedby="passwordHelp">
-                <div id="passwordHelp" class="password-rules">
-                    <strong>Important Security Note:</strong>
-                    Choose a strong, unique Master Password. This password will be used to encrypt all your data and cannot be recovered if forgotten.
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="confirm_password">Confirm Master Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password" placeholder="Confirm your master password">
-            </div>
-            <button type="submit" class="btn">Create Account</button>
-        </form>
-        <div class="auth-footer">
-            <p>Already have an account? <a href="{{ url_for('login') }}">Sign in</a></p>
+    <form method="POST" action="{{ url_for('register') }}">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required autocomplete="email">
         </div>
-    </div>
+        <div class="form-group">
+            <label for="password">Master Password:</label>
+            <input type="password" id="password" name="password" required autocomplete="new-password" aria-describedby="passwordHelp">
+            <small id="passwordHelp" class="password-rules">
+                Choose a strong, unique Master Password. You will need this to log in and decrypt your data. <br>
+                **It cannot be recovered if forgotten!**
+            </small>
+        </div>
+         <div class="form-group">
+            <label for="confirm_password">Confirm Master Password:</label>
+            <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-register">Register</button>
+    </form>
+     <p class="text-center mt-3">
+        Already have an account? <a href="{{ url_for('login') }}" class="link">Login here</a>
+    </p>
 </body>
 </html>
