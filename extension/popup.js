@@ -1,13 +1,13 @@
 // --- START OF FILE popup.js ---
 
 // --- Global Variables ---
-const API_BASE_URL = 'http://127.0.0.1:5000';
-let derivedEncryptionKey = null; // ArrayBuffer | null - Key used for crypto ops
-let userEmail = null; // string | null
-let allCredentials = [];
-let currentDomain = 'N/A';
+const API_BASE_URL = 'http://127.0.0.1:5000'; // Adjust if your backend runs elsewhere
+let derivedEncryptionKey = null; // ArrayBuffer | null - Key used for crypto ops after login/unlock
+let userEmail = null; // string | null - Email of the logged-in/remembered user
+let allCredentials = []; // Array to hold fetched credential objects {id, encrypted_data, service_hint}
+let currentDomain = 'N/A'; // Domain of the active browser tab
 
-// --- DOM Elements ---
+// --- DOM Elements (Define references early, check existence before use) ---
 const loginView = document.getElementById('login-view');
 const mainView = document.getElementById('main-view');
 const emailInput = document.getElementById('email');
@@ -23,58 +23,77 @@ const savePasswordBtn = document.getElementById('save-password-btn');
 const cancelAddBtn = document.getElementById('cancel-add-btn');
 const serviceInput = document.getElementById('service');
 const newUsernameInput = document.getElementById('new-username');
-const newPasswordInput = document.getElementById('new-password');
+const newPasswordInput = document.getElementById('new-password'); // Reference needed early
 const masterPasswordSaveInput = document.getElementById('masterPasswordSave');
 const saveError = document.getElementById('save-error');
 const logoutBtn = document.getElementById('logout-btn');
 const currentDomainSpan = document.getElementById('current-domain');
 const generatePopupPasswordBtn = document.getElementById('generate-popup-password-btn');
 const popupThemeToggleBtn = document.getElementById('popup-theme-toggle');
+// Generator Options Elements
 const popupGenLengthSlider = document.getElementById('popup-gen-length');
 const popupGenLengthValueSpan = document.getElementById('popup-gen-length-value');
 const popupGenLowercaseCheckbox = document.getElementById('popup-gen-lowercase');
 const popupGenUppercaseCheckbox = document.getElementById('popup-gen-uppercase');
 const popupGenDigitsCheckbox = document.getElementById('popup-gen-digits');
 const popupGenSymbolsCheckbox = document.getElementById('popup-gen-symbols');
+// Popup Add Form Analysis Elements
 const popupStrengthArea = document.getElementById('popup-strength-area');
 const popupStrengthIndicator = document.getElementById('popup-strength-indicator');
 const popupStrengthTextLabel = document.getElementById('popup-strength-text-label');
 const popupStrengthFeedbackDiv = document.getElementById('popup-strength-feedback');
-
-// --- Event Listeners ---
-loginBtn.addEventListener('click', handleLoginAttempt);
-logoutBtn.addEventListener('click', handleLogout);
-addPasswordBtn.addEventListener('click', showAddForm);
-cancelAddBtn.addEventListener('click', hideAddForm);
-savePasswordBtn.addEventListener('click', handleSavePassword);
-searchInput.addEventListener('input', handleSearchFilter);
-generatePopupPasswordBtn.addEventListener('click', handleGeneratePopupPassword);
-popupGenLengthSlider.addEventListener('input', () => { popupGenLengthValueSpan.textContent = popupGenLengthSlider.value; });
-newPasswordInput.addEventListener('input', handlePopupPasswordInput);
-if (popupThemeToggleBtn) popupThemeToggleBtn.addEventListener('click', togglePopupTheme);
+const popupBreachStatusArea = document.getElementById('popup-breach-status');
+const popupBreachIndicator = document.getElementById('popup-breach-indicator');
 
 
-// --- Initialization ---
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log("Popup: DOMContentLoaded");
-    applyPopupTheme();
-    // Make sure crypto helpers are loaded
-    if (typeof arrayBufferToBase64 === 'undefined' || typeof base64ToArrayBuffer === 'undefined' || typeof deriveKeyRawBytes === 'undefined' || typeof decryptData === 'undefined' || typeof encryptData === 'undefined') {
-         console.error("Crypto helpers not loaded! Ensure crypto-helpers.js is included correctly.");
-         showLoginView("Error: Required crypto functions missing. Reload extension.");
-         return;
-    }
-    await getCurrentTabDomain();
-    await checkLoginStatus();
-});
+// --- Utility & Helper Functions (Defined Outside DOMContentLoaded) ---
+
+// Debounce function specific to popup analysis
+let debounceTimerPopup;
+function debouncePopup(func, delay) {
+    return function(...args) {
+        clearTimeout(debounceTimerPopup);
+        debounceTimerPopup = setTimeout(() => {
+            func.apply(this, args); // Pass 'this' and arguments
+        }, delay);
+    };
+}
+
+// Helper to format zxcvbn feedback for the popup
+function formatZxcvbnFeedbackPopup(result) {
+     if (!result || !result.feedback) return '';
+     let html = '<ul>';
+     if (result.feedback.warning) { html += `<li class="warning">${escapeHtml(result.feedback.warning)}</li>`; }
+     if (result.feedback.suggestions && result.feedback.suggestions.length > 0) { result.feedback.suggestions.forEach(s => { html += `<li class="suggestion">${escapeHtml(s)}</li>`; }); }
+     else if (!result.feedback.warning) { if (result.score < 3) { html += '<li class="suggestion">Add length or variety (caps, nums, symbols).</li>'; } }
+     html += '</ul>';
+     return html;
+ }
+
+// Helper to map zxcvbn score (0-4) to CSS class
+function getStrengthClassFromScore(score) {
+     const classes = ['very-weak', 'weak', 'medium', 'strong', 'very-strong'];
+     const validScore = Math.max(0, Math.min(score ?? 0, 4));
+     return classes[validScore];
+ }
+
+// Helper to compare two ArrayBuffers
+function compareArrayBuffers(buf1, buf2) {
+    if (!buf1 || !buf2 || buf1.byteLength !== buf2.byteLength) return false;
+    const view1 = new Uint8Array(buf1);
+    const view2 = new Uint8Array(buf2);
+    for (let i = 0; i < buf1.byteLength; i++) { if (view1[i] !== view2[i]) return false; }
+    return true;
+}
 
 // --- Theme Handling ---
 function applyPopupTheme() {
     chrome.storage.local.get(['popupTheme'], (result) => {
-        const theme = result.popupTheme || 'light'; // Default to light
+        const theme = result.popupTheme || 'light';
         document.body.setAttribute('data-theme', theme);
         if (popupThemeToggleBtn) {
             popupThemeToggleBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+            popupThemeToggleBtn.title = `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`;
         }
     });
 }
@@ -86,7 +105,7 @@ function togglePopupTheme() {
 
 // --- Communication with Background Script ---
 async function sendMessageToBackground(message) {
-    console.log("[Popup] Sending message to background ->", message.action, message); // Log sent message
+    console.log("[Popup] Sending message to background ->", message.action, message);
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(message, (response) => {
             const lastError = chrome.runtime.lastError;
@@ -98,351 +117,273 @@ async function sendMessageToBackground(message) {
                 }
                 reject(new Error(errorMsg));
             } else {
-                 console.log("[Popup] Received response from background for ->", message.action, response); // Log received response
-                resolve(response);
+                 console.log("[Popup] Received response from background for ->", message.action, response);
+                 if (response && response.success === false && response.error) {
+                     reject(new Error(response.error));
+                 } else {
+                    resolve(response);
+                 }
             }
         });
     });
 }
 
-// --- Authentication ---
-async function checkLoginStatus() {
+// --- Authentication Functions ---
+async function checkLoginStatus() { /* ... (code as before) ... */
     console.log("Popup: Checking login status...");
     try {
         const response = await sendMessageToBackground({ action: 'getKey' });
-
-        // Check for key as Base64 string
         if (response && response.success && typeof response.keyB64 === 'string' && response.email) {
-            console.log("Popup: Key (Base64) retrieved from background for", response.email);
-            try {
-                // Convert Base64 back to ArrayBuffer
-                derivedEncryptionKey = base64ToArrayBuffer(response.keyB64); // Assumes base64ToArrayBuffer is loaded
-                userEmail = response.email;
-                console.log("Popup: Key successfully converted back to ArrayBuffer.");
-                showMainView(true); // Show main view and load credentials
-                updateDomainDisplay();
-            } catch (conversionError) {
-                console.error("Popup: Failed to convert key from Base64 ->", conversionError);
-                throw new Error("Invalid key format received from background."); // Throw to be caught below
-            }
+            derivedEncryptionKey = base64ToArrayBuffer(response.keyB64);
+            userEmail = response.email;
+            showMainView(true); updateDomainDisplay();
         } else {
-             console.log("Popup: No valid key found in background. Checking for email.");
-             // If no key in background, check if we know the email (for unlock prompt)
              const emailCheckResponse = await sendMessageToBackground({ action: 'getEmail' });
-             if (emailCheckResponse && emailCheckResponse.success && emailCheckResponse.email) {
-                  userEmail = emailCheckResponse.email; // Store email locally ONLY for unlock prompt
-                  console.log("Popup: Background remembers email", userEmail, "-> Prompting for unlock.");
+             if (emailCheckResponse?.success && emailCheckResponse.email) {
+                  userEmail = emailCheckResponse.email;
                   showLoginView(`Unlock Manager for ${userEmail}`);
-                  if(emailInput) emailInput.value = userEmail; // Pre-fill email
-                  if(masterPasswordLoginInput) masterPasswordLoginInput.focus(); // Focus password
+                  if(emailInput) emailInput.value = userEmail;
+                  if(masterPasswordLoginInput) masterPasswordLoginInput.focus();
              } else {
-                  console.log("Popup: Background has no key or email -> Full login required.");
-                  userEmail = null; // Ensure email is null
-                  derivedEncryptionKey = null;
-                  showLoginView(); // Show full login prompt
-                  if(emailInput) emailInput.focus();
+                  userEmail = null; derivedEncryptionKey = null; showLoginView(); if(emailInput) emailInput.focus();
              }
         }
-    } catch (error) {
-        // This catch block handles errors from sendMessageToBackground
-        console.error("Popup: Failed during checkLoginStatus ->", error.message);
-        showLoginView(error.message || 'Error contacting background service.'); // Display the error message from the catch
-        userEmail = null;
-        derivedEncryptionKey = null;
-    }
+    } catch (error) { console.error("Popup: checkLoginStatus failed:", error); showLoginView(error.message || 'Background error.'); userEmail = null; derivedEncryptionKey = null; }
 }
-
-
-async function handleLoginAttempt() {
-    const emailToUse = userEmail || emailInput.value.trim(); // Use stored email if unlocking
-    const masterPassword = masterPasswordLoginInput.value;
-    if (!emailToUse || !masterPassword) { showLoginError("Email and Master Password are required."); return; }
-
-    loginBtn.disabled = true;
-    loginBtn.textContent = userEmail ? 'Unlocking...' : 'Logging in...';
+async function handleLoginAttempt() { /* ... (code as before) ... */
+    const emailToUse = userEmail || (emailInput ? emailInput.value.trim() : '');
+    const masterPassword = masterPasswordLoginInput ? masterPasswordLoginInput.value : '';
+    if (!emailToUse || !masterPassword) { showLoginError("Email and Master Password required."); return; }
+    if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = userEmail ? 'Unlocking...' : 'Logging in...'; }
     hideLoginError();
     let keyBuffer = null;
-
     try {
-        console.log(`Popup: Attempting key derivation for ${emailToUse}...`);
-        keyBuffer = await deriveKeyRawBytes(masterPassword, emailToUse); // Assumes deriveKeyRawBytes is loaded
-        console.log("Popup: Key derived successfully locally (ArrayBuffer).");
-
-        const keyB64 = arrayBufferToBase64(keyBuffer); // Assumes arrayBufferToBase64 is loaded
-        console.log("Popup: Key converted to Base64 for transport.");
-
-        // *** ADDED DETAILED LOGGING BEFORE SENDING ***
-        const messageToSend = {
-            action: 'storeKey',
-            keyB64: keyB64,
-            email: emailToUse
-        };
-        console.log("[Popup] Preparing to send 'storeKey' message:", JSON.stringify({
-            action: messageToSend.action,
-            email: messageToSend.email,
-            keyB64_type: typeof messageToSend.keyB64,
-            keyB64_length: messageToSend.keyB64?.length,
-            keyB64_snippet: messageToSend.keyB64?.substring(0, 10) + "..." // Log a snippet
-        }, null, 2)); // Added indentation for readability
-        // *** END ADDED LOGGING ***
-
-        console.log("Popup: Sending 'storeKey' message with Base64 key to background...");
-        const storeResponse = await sendMessageToBackground(messageToSend); // Send the prepared message
-
-        if (!storeResponse || !storeResponse.success) {
-            throw new Error(storeResponse?.error || "Failed to store key in background service.");
-        }
-
-        // If storing succeeded:
-        derivedEncryptionKey = keyBuffer; // Keep local key as ArrayBuffer
-        userEmail = emailToUse;          // Update local email
-
-        console.log("Popup: Key stored in background. Showing main view.");
-        showMainView(true); // Show main view & trigger data fetch
-        updateDomainDisplay();
-
+        keyBuffer = await deriveKeyRawBytes(masterPassword, emailToUse);
+        const keyB64 = arrayBufferToBase64(keyBuffer);
+        await sendMessageToBackground({ action: 'storeKey', keyB64: keyB64, email: emailToUse });
+        derivedEncryptionKey = keyBuffer; userEmail = emailToUse;
+        showMainView(true); updateDomainDisplay();
     } catch (error) {
-        console.error('Popup: Login/Unlock error ->', error.message, error);
-        derivedEncryptionKey = null; // Clear local key on any failure
-
-        if (error.message.includes("derive") || error.message.includes("Invalid Base64URL")) {
-             showLoginError("Key derivation failed. Incorrect Master Password?");
-        } else if (error.message.includes("background")) {
-             showLoginError(`Session error: ${error.message}. Please try again.`);
-        } else {
-             showLoginError(`Error: ${error.message}`); // Show other errors
-        }
-
-        // Determine which view to show based on whether it was an unlock attempt
-        if(userEmail) { // It was an unlock attempt that failed
-             showLoginView(`Unlock Failed for ${userEmail}`); // Keep showing unlock prompt
-             if (emailInput) emailInput.value = userEmail;
-        } else { // It was a login attempt that failed
-             showLoginView(); // Show full login
-             if (emailInput) emailInput.value = emailToUse; // Keep entered email
-        }
-         if (masterPasswordLoginInput) masterPasswordLoginInput.value = ''; // Clear password field
-
-    } finally {
-        loginBtn.disabled = false;
-        // Determine button text based on whether userEmail was set *before* the attempt
-        loginBtn.textContent = userEmail ? 'Unlock' : 'Login';
+        console.error('Popup: Login/Unlock error:', error); derivedEncryptionKey = null; showLoginError(`Error: ${error.message}`);
+        if(userEmail && !derivedEncryptionKey) { showLoginView(`Unlock Failed: ${userEmail}`); if (emailInput) emailInput.value = userEmail; }
+        else { showLoginView(); if (emailInput) emailInput.value = emailToUse; }
         if (masterPasswordLoginInput) masterPasswordLoginInput.value = '';
-    }
+    } finally { if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = (userEmail && !derivedEncryptionKey) ? 'Unlock' : 'Login'; } if (masterPasswordLoginInput) masterPasswordLoginInput.value = ''; }
 }
-
-
-async function handleLogout() {
-    console.log("Popup: Handling logout.");
-    const emailBeforeLogout = userEmail;
+async function handleLogout() { /* ... (code as before) ... */
+    console.log("Popup: Logging out."); const emailBefore = userEmail;
     derivedEncryptionKey = null; userEmail = null; allCredentials = [];
-
-    try {
-        console.log("Popup: Sending 'clearKey' message to background...");
-        await sendMessageToBackground({ action: 'clearKey' });
-        console.log("Popup: Background key cleared via message.");
-    } catch (error) { console.error("Popup: Error sending 'clearKey' to background ->", error.message); }
-
-    try { await fetch(`${API_BASE_URL}/logout`, { method: 'GET', credentials: 'include' }); console.log("Popup: Backend logout request sent."); }
-    catch (error) { console.warn("Popup: Backend logout fetch error:", error); }
-
-    showLoginView(`Logged out from ${emailBeforeLogout || 'session'}.`);
-    if(emailInput) emailInput.value = ''; if(masterPasswordLoginInput) masterPasswordLoginInput.value = '';
+    try { await sendMessageToBackground({ action: 'clearKey' }); } catch (error) { console.error("Popup: Error clearing background key:", error.message); }
+    try { await fetch(`${API_BASE_URL}/logout`, { method: 'GET', credentials: 'include' }); } catch (error) { console.warn("Popup: Backend logout failed:", error); }
+    showLoginView(`Logged out: ${emailBefore || 'session'}.`); if(emailInput) emailInput.value = ''; if(masterPasswordLoginInput) masterPasswordLoginInput.value = '';
 }
 
-
-// --- UI View Management ---
-function showLoginView(message = null) {
-    loginView.classList.remove('hidden'); mainView.classList.add('hidden');
-    if (message) { showLoginError(message); } else { hideLoginError(); }
-    if (!userEmail && emailInput) { emailInput.focus(); }
-    else if (userEmail && masterPasswordLoginInput) { masterPasswordLoginInput.focus(); }
+// --- UI View Management Functions ---
+function showLoginView(message = null) { /* ... (code as before) ... */
+    if (loginView) loginView.classList.remove('hidden'); if (mainView) mainView.classList.add('hidden');
+    if (message) showLoginError(message); else hideLoginError();
+    if (!userEmail && emailInput) emailInput.focus(); else if (userEmail && masterPasswordLoginInput) masterPasswordLoginInput.focus();
 }
-function showLoginError(message) { loginError.textContent = message; loginError.classList.remove('hidden'); }
-function hideLoginError() { loginError.classList.add('hidden'); loginError.textContent = ''; }
-function showMainView(fetchData = false) {
-    loginView.classList.add('hidden'); mainView.classList.remove('hidden'); hideAddForm();
-    if (fetchData && derivedEncryptionKey) { loadAndDisplayCredentials(); }
-    else if (!derivedEncryptionKey) { console.error("showMainView called but derivedEncryptionKey is missing!"); showLoginView("Error: Key is missing. Please unlock."); }
+function showLoginError(message) { if(loginError) { loginError.textContent = message; loginError.classList.remove('hidden'); } }
+function hideLoginError() { if(loginError) { loginError.classList.add('hidden'); loginError.textContent = ''; } }
+function showMainView(fetchData = false) { /* ... (code as before) ... */
+    if (loginView) loginView.classList.add('hidden'); if (mainView) mainView.classList.remove('hidden'); hideAddForm();
+    if (fetchData && derivedEncryptionKey) loadAndDisplayCredentials();
+    else if (!derivedEncryptionKey) { console.error("showMainView: Key missing!"); showLoginView("Error: Key missing. Unlock."); }
     updateDomainDisplay();
 }
-function updateDomainDisplay() { if (currentDomainSpan) { currentDomainSpan.textContent = `Domain: ${currentDomain}`; currentDomainSpan.title = `Current Tab Domain: ${currentDomain}`; } }
-function showAddForm() {
-    addPasswordForm.classList.remove('hidden'); addPasswordBtn.classList.add('hidden'); hideSaveError();
-    if (currentDomain !== 'N/A' && !serviceInput.value) { let domainName = currentDomain.replace(/^www\./, ''); serviceInput.value = domainName.charAt(0).toUpperCase() + domainName.slice(1); }
-    newPasswordInput.value = ''; handlePopupPasswordInput(); masterPasswordSaveInput.value = ''; if(serviceInput) serviceInput.focus();
+function updateDomainDisplay() { /* ... (code as before) ... */
+    if (currentDomainSpan) { currentDomainSpan.textContent = `Domain: ${currentDomain}`; currentDomainSpan.title = `Current Tab: ${currentDomain}`; }
 }
-function hideAddForm() {
-    addPasswordForm.classList.add('hidden'); addPasswordBtn.classList.remove('hidden');
-    serviceInput.value = ''; newUsernameInput.value = ''; newPasswordInput.value = ''; masterPasswordSaveInput.value = ''; hideSaveError();
-    popupGenLengthSlider.value = 16; popupGenLengthValueSpan.textContent = '16'; popupGenLowercaseCheckbox.checked = true; popupGenUppercaseCheckbox.checked = true; popupGenDigitsCheckbox.checked = true; popupGenSymbolsCheckbox.checked = true;
-    if (popupStrengthArea) popupStrengthArea.style.display = 'none'; if (popupStrengthIndicator) popupStrengthIndicator.className = 'popup-strength-indicator very-weak'; if (popupStrengthTextLabel) popupStrengthTextLabel.textContent = 'Strength:'; if (popupStrengthFeedbackDiv) popupStrengthFeedbackDiv.innerHTML = ''; if (popupStrengthArea) popupStrengthArea.className = 'popup-strength-area';
+function showAddForm() { /* ... (code as before - CORRECTED CALL) ... */
+    if (addPasswordForm) addPasswordForm.classList.remove('hidden');
+    if (addPasswordBtn) addPasswordBtn.classList.add('hidden');
+    hideSaveError();
+    if (currentDomain !== 'N/A' && serviceInput && !serviceInput.value) { let dN = currentDomain.replace(/^www\./, ''); serviceInput.value = dN.charAt(0).toUpperCase() + dN.slice(1); }
+    if (newPasswordInput) newPasswordInput.value = '';
+    // ***** CORRECTED: Dispatch event instead of calling function directly *****
+    if (newPasswordInput) {
+        newPasswordInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    // ***** END CORRECTION *****
+    if (masterPasswordSaveInput) masterPasswordSaveInput.value = '';
+    if(serviceInput) serviceInput.focus();
 }
-function showSaveError(message) { saveError.textContent = message; saveError.classList.remove('hidden'); }
-function hideSaveError() { saveError.textContent = ''; saveError.classList.add('hidden'); }
-function setPopupStatus(message, isError = false, duration = 0) { statusIndicator.textContent = message; statusIndicator.className = `status-message ${isError ? 'status-error' : (message.includes("copied") ? 'status-success' : 'status-info')}`; statusIndicator.classList.remove('hidden'); if (duration > 0) { setTimeout(clearPopupStatus, duration); } }
-function clearPopupStatus() { statusIndicator.classList.add('hidden'); statusIndicator.textContent = ''; statusIndicator.className = 'status-message status-info'; }
+function hideAddForm() { /* ... (code as before) ... */
+    if (addPasswordForm) addPasswordForm.classList.add('hidden'); if (addPasswordBtn) addPasswordBtn.classList.remove('hidden');
+    if (serviceInput) serviceInput.value = ''; if (newUsernameInput) newUsernameInput.value = ''; if (newPasswordInput) newPasswordInput.value = ''; if (masterPasswordSaveInput) masterPasswordSaveInput.value = '';
+    hideSaveError();
+    if (popupGenLengthSlider) popupGenLengthSlider.value = 16; if (popupGenLengthValueSpan) popupGenLengthValueSpan.textContent = '16';
+    if (popupGenLowercaseCheckbox) popupGenLowercaseCheckbox.checked = true; if (popupGenUppercaseCheckbox) popupGenUppercaseCheckbox.checked = true;
+    if (popupGenDigitsCheckbox) popupGenDigitsCheckbox.checked = true; if (popupGenSymbolsCheckbox) popupGenSymbolsCheckbox.checked = true;
+    if (popupStrengthArea) popupStrengthArea.style.display = 'none'; if (popupBreachStatusArea) popupBreachStatusArea.style.display = 'none';
+}
+function showSaveError(message) { /* ... (code as before) ... */ if(saveError) { saveError.textContent = message; saveError.classList.remove('hidden'); } }
+function hideSaveError() { /* ... (code as before) ... */ if(saveError) { saveError.textContent = ''; saveError.classList.add('hidden'); } }
+function setPopupStatus(message, isError = false, duration = 0) { /* ... (code as before) ... */
+     if (statusIndicator) { statusIndicator.textContent = message; statusIndicator.className = `status-message ${isError ? 'status-error' : (message.includes("copied") || message.includes("saved") ? 'status-success' : 'status-info')}`; statusIndicator.classList.remove('hidden'); if (duration > 0) { if (window.statusClearTimer) clearTimeout(window.statusClearTimer); window.statusClearTimer = setTimeout(clearPopupStatus, duration); }}
+}
+function clearPopupStatus() { /* ... (code as before) ... */ if(statusIndicator) { statusIndicator.classList.add('hidden'); statusIndicator.textContent = ''; statusIndicator.className = 'status-message status-info'; }}
 
-
-// --- Credential Handling ---
-async function loadAndDisplayCredentials() {
-    if (!derivedEncryptionKey) {
-        // ... error handling ...
-        return;
-    }
-    setPopupStatus("Loading credentials...", false);
-    passwordList.innerHTML = '';
-
-    try {
-        // ***** VERIFY THIS LINE *****
-        const response = await fetch(`${API_BASE_URL}/api/credentials`, {
-            method: 'GET',
-            credentials: 'include' // <<< ENSURE THIS IS PRESENT!
-        });
-        // ***** END VERIFICATION *****
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                console.log("Credentials fetch failed (401), session likely expired.");
-                await handleLogout(); // Perform full logout
-                showLoginView("Session expired. Please log in again.");
-            } else {
-                // Throw error for other non-ok statuses
-                throw new Error(`Failed to fetch credentials (${response.status})`);
-            }
-            return; // Stop execution if fetch failed
-        }
-
-        // If response.ok, proceed to parse JSON
-        const responseText = await response.text(); // Get text first for debugging
-        try {
-            const encryptedCredentials = JSON.parse(responseText); // Try parsing
-            allCredentials = encryptedCredentials || [];
-            clearPopupStatus();
-
-            if (allCredentials.length === 0) {
-                passwordList.innerHTML = `<li style="padding: 10px; text-align: center; color: #777; list-style: none;">No credentials saved yet.</li>`;
-            } else {
-                filterAndRenderList();
-            }
-        } catch (jsonError) {
-             // This is where the "Unexpected token '<'" error is caught
-             console.error("JSON Parsing Error:", jsonError);
-             console.error("Received non-JSON response text:", responseText); // Log the actual HTML received
-             throw new Error(`Invalid response received from server (Expected JSON, got HTML?). Status: ${response.status}`);
-        }
-
-    } catch (error) {
-        setPopupStatus(`Error loading credentials: ${error.message}`, true);
-        console.error('Load credentials error:', error);
-    }
- }
-function filterAndRenderList() {
-     passwordList.innerHTML = ''; const searchTerm = searchInput.value.toLowerCase().trim(); let filtered = []; let domainMatches = [];
-     if (currentDomain !== 'N/A' && !searchTerm) { const lowerCaseDomain = currentDomain.replace(/^www\./, '').toLowerCase(); domainMatches = allCredentials.filter(cred => cred.service_hint && cred.service_hint.toLowerCase().includes(lowerCaseDomain)); const otherCredentials = allCredentials.filter(cred => !domainMatches.includes(cred)); domainMatches.sort((a, b) => (a.service_hint || '').localeCompare(b.service_hint || '')); otherCredentials.sort((a, b) => (a.service_hint || '').localeCompare(b.service_hint || '')); filtered = [...domainMatches, ...otherCredentials]; }
-     else { filtered = allCredentials.filter(cred => { if (searchTerm) { const hintMatch = cred.service_hint && cred.service_hint.toLowerCase().includes(searchTerm); const usernameMatch = cred.decrypted_username_temp && cred.decrypted_username_temp.toLowerCase().includes(searchTerm); return hintMatch || usernameMatch; } else { return true; } }); filtered.sort((a, b) => (a.service_hint || '').localeCompare(b.service_hint || '')); }
-     if (filtered.length === 0) { const message = searchTerm ? "No credentials match search." : (allCredentials.length === 0 ? "No credentials saved yet." : "No credentials to display."); passwordList.innerHTML = `<li style="padding: 10px; text-align: center; color: #777; list-style: none;">${message}</li>`; return; }
+// --- Credential Handling Functions ---
+async function loadAndDisplayCredentials() { /* ... (code as before) ... */
+    if (!derivedEncryptionKey) { console.error("loadDisplay: Key missing."); setPopupStatus("Key missing.", true); return; }
+    setPopupStatus("Loading...", false); if (passwordList) passwordList.innerHTML = '';
+    try { const resp = await fetch(`${API_BASE_URL}/api/credentials`, { method: 'GET', credentials: 'include' }); if (!resp.ok) { if (resp.status === 401) { await handleLogout(); showLoginView("Session expired."); } else { throw new Error(`Fetch failed (${resp.status})`); } return; } const txt = await resp.text(); try { allCredentials = JSON.parse(txt) || []; clearPopupStatus(); if (allCredentials.length === 0) { if (passwordList) passwordList.innerHTML = `<li style="padding: 10px; text-align: center; color: var(--popup-text-secondary); list-style: none;">None saved.</li>`; } else { filterAndRenderList(); } } catch (jsonErr) { console.error("JSON Err:", jsonErr, "Resp:", txt); throw new Error(`Invalid server response (${resp.status})`); } }
+    catch (error) { setPopupStatus(`Load Error: ${error.message}`, true); console.error('Load cred error:', error); }
+}
+function filterAndRenderList() { /* ... (code as before) ... */
+     if (!passwordList) return; passwordList.innerHTML = ''; const term = searchInput ? searchInput.value.toLowerCase().trim() : ''; let filtered = []; let domainMatches = [];
+     if (currentDomain !== 'N/A' && !term) { const lcDomain = currentDomain.replace(/^www\./, '').toLowerCase(); domainMatches = allCredentials.filter(c => c.service_hint?.toLowerCase().includes(lcDomain)); const others = allCredentials.filter(c => !domainMatches.includes(c)); domainMatches.sort((a, b) => (a.service_hint || '').localeCompare(b.service_hint || '')); others.sort((a, b) => (a.service_hint || '').localeCompare(b.service_hint || '')); filtered = [...domainMatches, ...others]; }
+     else { filtered = allCredentials.filter(c => term ? (c.service_hint?.toLowerCase().includes(term)) : true); filtered.sort((a, b) => (a.service_hint || '').localeCompare(b.service_hint || '')); }
+     if (filtered.length === 0) { const msg = term ? "No match." : (allCredentials.length === 0 ? "None saved." : "No credentials."); passwordList.innerHTML = `<li style="padding: 10px; text-align: center; color: var(--popup-text-secondary); list-style: none;">${msg}</li>`; return; }
      filtered.forEach(cred => renderCredentialItem(cred, domainMatches.includes(cred)));
 }
-function renderCredentialItem(credential, isDomainMatch = false) {
-    const li = document.createElement('li'); li.className = 'password-item'; li.dataset.encrypted = credential.encrypted_data; li.dataset.serviceHint = credential.service_hint || '(No Hint)';
-    if (isDomainMatch) { li.style.backgroundColor = "rgba(0, 123, 255, 0.05)"; }
-    const itemContainer = document.createElement('div'); itemContainer.style.flexGrow = '1'; itemContainer.style.overflow = 'hidden';
-    const infoDiv = document.createElement('div'); infoDiv.className = 'item-info'; infoDiv.innerHTML = `<strong>${escapeHtml(credential.service_hint || '(No Hint)')}</strong><span class="username-display">(Username Hidden)</span>`;
-    const strengthDiv = document.createElement('div'); strengthDiv.className = 'strength-display-popup'; itemContainer.append(infoDiv, strengthDiv);
-    const actionsDiv = document.createElement('div'); actionsDiv.className = 'item-actions';
-    const showBtn = document.createElement('button'); showBtn.textContent = 'Show'; showBtn.title = 'Decrypt/show details'; showBtn.onclick = (e) => { e.stopPropagation(); handleShowDetails(li); };
-    const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy'; copyBtn.title = 'Copy password'; copyBtn.onclick = (e) => { e.stopPropagation(); handleCopyPassword(li); }; copyBtn.style.display = 'none';
-    const fillBtn = document.createElement('button'); fillBtn.textContent = 'Fill'; fillBtn.title = 'Fill username & password on current page'; fillBtn.onclick = (e) => { e.stopPropagation(); handleFillPassword(li); }; fillBtn.style.display = 'none';
-    if (isDomainMatch) { li.title = `Click to fill ${escapeHtml(credential.service_hint || '')}`; li.style.cursor = 'pointer'; li.addEventListener('click', async (e) => { if (e.target === li || e.target.closest('.item-info')) { if (!derivedEncryptionKey) { alert("Cannot decrypt. Please unlock first."); return; } const decrypted = await decryptData(derivedEncryptionKey, credential.encrypted_data); if (decrypted && decrypted.password) { handleDirectFill(decrypted.username || '', decrypted.password); } else { alert("Decryption failed. Cannot fill."); } } }); }
-    actionsDiv.append(showBtn, copyBtn, fillBtn); li.append(itemContainer, actionsDiv); passwordList.appendChild(li);
+function renderCredentialItem(credential, isDomainMatch = false) { /* ... (code as before) ... */
+     if (!passwordList) return; const li = document.createElement('li'); li.className = 'password-item'; li.dataset.encrypted = credential.encrypted_data; li.dataset.serviceHint = credential.service_hint || '(No Hint)';
+     if (isDomainMatch) { li.style.setProperty('--popup-item-hover', 'rgba(0, 123, 255, 0.1)'); li.style.borderLeft = '3px solid var(--popup-primary-color)'; li.style.paddingLeft = '9px'; }
+     const itemCont = document.createElement('div'); itemCont.style.flexGrow = '1'; itemCont.style.overflow = 'hidden';
+     const infoDiv = document.createElement('div'); infoDiv.className = 'item-info'; infoDiv.innerHTML = `<strong>${escapeHtml(credential.service_hint || '(No Hint)')}</strong><span class="username-display">(Username Hidden)</span>`;
+     const strDiv = document.createElement('div'); strDiv.className = 'strength-display-popup'; strDiv.style.display = 'none';
+     const brchDiv = document.createElement('div'); brchDiv.className = 'breach-display-popup'; brchDiv.style.display = 'none'; brchDiv.style.fontSize = '0.8em'; brchDiv.style.marginTop = '4px'; brchDiv.style.paddingRight = '5px';
+     itemCont.append(infoDiv, strDiv, brchDiv);
+     const actsDiv = document.createElement('div'); actsDiv.className = 'item-actions';
+     const showBtn = document.createElement('button'); showBtn.textContent = 'Show'; showBtn.title = 'Decrypt/show details'; showBtn.onclick = (e) => { e.stopPropagation(); handleShowDetails(li); };
+     const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy'; copyBtn.title = 'Copy password'; copyBtn.style.display = 'none'; copyBtn.onclick = (e) => { e.stopPropagation(); handleCopyPassword(li); };
+     const fillBtn = document.createElement('button'); fillBtn.textContent = 'Fill'; fillBtn.title = 'Fill on current page'; fillBtn.style.display = 'none'; fillBtn.onclick = (e) => { e.stopPropagation(); handleFillPassword(li); };
+     if (isDomainMatch) { li.title = `Click to fill ${escapeHtml(credential.service_hint || '')}`; li.style.cursor = 'pointer'; li.addEventListener('click', async (e) => { if (e.target === li || infoDiv.contains(e.target)) { if (!derivedEncryptionKey) { alert("Unlock first."); return; } const dec = await decryptData(derivedEncryptionKey, credential.encrypted_data); if (dec?.password) { handleDirectFill(dec.username || '', dec.password); } else { alert("Decrypt failed."); } } }); }
+     actsDiv.append(showBtn, copyBtn, fillBtn); li.append(itemCont, actsDiv); passwordList.appendChild(li);
 }
-async function handleShowDetails(listItem) {
-    if (!derivedEncryptionKey) { alert("Cannot decrypt. Please unlock first."); return; }
-    const encryptedDataB64 = listItem.dataset.encrypted; const itemContainer = listItem.querySelector('div[style*="flex-grow"]'); const infoDiv = itemContainer.querySelector('.item-info'); const usernameSpan = infoDiv.querySelector('.username-display'); const strengthDiv = itemContainer.querySelector('.strength-display-popup'); const showBtn = listItem.querySelector('.item-actions button:nth-child(1)'); const copyBtn = listItem.querySelector('.item-actions button:nth-child(2)'); const fillBtn = listItem.querySelector('.item-actions button:nth-child(3)'); const assessmentMap = ["Very Weak", "Weak", "Medium", "Strong", "Very Strong"];
-    if (showBtn.textContent === 'Show') { showBtn.textContent = '...'; showBtn.disabled = true; strengthDiv.style.display = 'none'; const decrypted = await decryptData(derivedEncryptionKey, encryptedDataB64); showBtn.disabled = false; if (decrypted) { const service = decrypted.service || '(No Service)'; const username = decrypted.username || '(No Username)'; const password = decrypted.password || ''; infoDiv.querySelector('strong').textContent = escapeHtml(service); usernameSpan.textContent = escapeHtml(username); listItem.dataset.decryptedPassword = password; listItem.dataset.decryptedUsername = username; listItem.decrypted_username_temp = username.toLowerCase(); showBtn.textContent = 'Hide'; copyBtn.style.display = 'inline-block'; fillBtn.style.display = 'inline-block'; usernameSpan.style.color = ''; if (password && typeof zxcvbn === 'function') { const result = zxcvbn(password); const score = result.score; strengthDiv.textContent = `Strength: ${assessmentMap[score]}`; strengthDiv.className = `strength-display-popup score-${score}`; strengthDiv.style.display = 'block'; } else { strengthDiv.style.display = 'none'; } } else { usernameSpan.textContent = '(Decrypt Failed)'; usernameSpan.style.color = 'red'; showBtn.textContent = 'Error'; strengthDiv.style.display = 'none'; copyBtn.style.display = 'none'; fillBtn.style.display = 'none'; delete listItem.dataset.decryptedPassword; delete listItem.dataset.decryptedUsername; delete listItem.decrypted_username_temp; } }
-    else { const originalHint = listItem.dataset.serviceHint; infoDiv.querySelector('strong').textContent = escapeHtml(originalHint); usernameSpan.textContent = '(Username Hidden)'; usernameSpan.style.color = ''; showBtn.textContent = 'Show'; copyBtn.style.display = 'none'; fillBtn.style.display = 'none'; strengthDiv.style.display = 'none'; delete listItem.dataset.decryptedPassword; delete listItem.dataset.decryptedUsername; delete listItem.decrypted_username_temp; }
+async function handleShowDetails(listItem) { /* ... (code as before) ... */
+    if (!derivedEncryptionKey) { alert("Unlock first."); return; }
+    const encData = listItem.dataset.encrypted; const itemCont = listItem.querySelector('div[style*="flex-grow"]'); if (!itemCont) return;
+    const infoD = itemCont.querySelector('.item-info'); const userSpan = infoD?.querySelector('.username-display'); const strDiv = itemCont.querySelector('.strength-display-popup'); const brchDiv = itemCont.querySelector('.breach-display-popup'); const actsDiv = listItem.querySelector('.item-actions');
+    const showBtn = actsDiv?.querySelector('button:nth-child(1)'); const copyBtn = actsDiv?.querySelector('button:nth-child(2)'); const fillBtn = actsDiv?.querySelector('button:nth-child(3)');
+    if (!infoD || !userSpan || !strDiv || !brchDiv || !actsDiv || !showBtn || !copyBtn || !fillBtn) { console.error("Missing list item elements."); return; }
+    const assessmentMap = ["Very Weak", "Weak", "Medium", "Strong", "Very Strong"];
+    if (showBtn.textContent === 'Show') {
+        showBtn.textContent = '...'; showBtn.disabled = true; strDiv.style.display = 'none'; brchDiv.style.display = 'none'; brchDiv.textContent = 'Breach: Checking...'; brchDiv.className = 'breach-display-popup loading';
+        const dec = await decryptData(derivedEncryptionKey, encData); showBtn.disabled = false;
+        if (dec) {
+            const svc = dec.service || '(No Service)'; const user = dec.username || '(No Username)'; const pass = dec.password || '';
+            listItem.dataset.decryptedPassword = pass; listItem.dataset.decryptedUsername = user;
+            infoD.querySelector('strong').textContent = escapeHtml(svc); userSpan.textContent = escapeHtml(user); userSpan.style.color = '';
+            showBtn.textContent = 'Hide'; copyBtn.style.display = 'inline-block'; fillBtn.style.display = 'inline-block';
+            let strScore = -1;
+            if (pass && typeof zxcvbn === 'function') { try { const r = zxcvbn(pass); strScore = r.score; strDiv.textContent = `Strength: ${assessmentMap[strScore]}`; strDiv.className = `strength-display-popup score-${strScore}`; strDiv.style.display = 'block'; } catch(e){ strDiv.textContent = 'Strength: Error'; strDiv.className = 'strength-display-popup score-0'; strDiv.style.display = 'block';} } else { strDiv.style.display = 'none'; }
+            if (pass && typeof checkHIBPPassword === 'function') {
+                 brchDiv.style.display = 'block'; try { const br = await checkHIBPPassword(pass); if (br.error) { brchDiv.textContent = `Breach: Error`; brchDiv.className = 'breach-display-popup error'; brchDiv.title = escapeHtml(br.error); } else if (br.isPwned) { brchDiv.textContent = `Breach: Compromised! (${br.count})`; brchDiv.className = 'breach-display-popup pwned'; brchDiv.title = `Found in ${br.count} breach(es).`; } else { brchDiv.textContent = 'Breach: Not Found'; brchDiv.className = 'breach-display-popup safe'; brchDiv.title = 'Not found.'; } } catch (be) { brchDiv.textContent = `Breach: Error`; brchDiv.className = 'breach-display-popup error'; brchDiv.title = 'Check failed.'; } }
+             else { brchDiv.style.display = 'none'; }
+        } else { userSpan.textContent = '(Decrypt Failed)'; userSpan.style.color = 'var(--popup-danger-color)'; showBtn.textContent = 'Error'; strDiv.style.display = 'none'; brchDiv.style.display = 'none'; copyBtn.style.display = 'none'; fillBtn.style.display = 'none'; delete listItem.dataset.decryptedPassword; delete listItem.dataset.decryptedUsername; }
+    } else { const origHint = listItem.dataset.serviceHint; infoD.querySelector('strong').textContent = escapeHtml(origHint); userSpan.textContent = '(Username Hidden)'; userSpan.style.color = ''; showBtn.textContent = 'Show'; copyBtn.style.display = 'none'; fillBtn.style.display = 'none'; strDiv.style.display = 'none'; brchDiv.style.display = 'none'; delete listItem.dataset.decryptedPassword; delete listItem.dataset.decryptedUsername; }
 }
-async function handleCopyPassword(listItem) {
-    const password = listItem.dataset.decryptedPassword; if (!password) { await handleShowDetails(listItem); const updatedPassword = listItem.dataset.decryptedPassword; if (!updatedPassword) { alert("Decryption failed. Cannot copy."); return; } try { await navigator.clipboard.writeText(updatedPassword); setPopupStatus("Password copied!", false, 1500); } catch (err) { setPopupStatus("Failed to copy.", true); console.error('Copy error:', err); } return; } try { await navigator.clipboard.writeText(password); setPopupStatus("Password copied!", false, 1500); } catch (err) { setPopupStatus("Failed to copy.", true); console.error('Copy error:', err); }
+async function handleCopyPassword(listItem) { /* ... (code as before) ... */
+     let pass = listItem.dataset.decryptedPassword; if (!pass) { setPopupStatus("Decrypting...", false); await handleShowDetails(listItem); pass = listItem.dataset.decryptedPassword; clearPopupStatus(); if (!pass) { alert("Decrypt failed."); return; } } try { await navigator.clipboard.writeText(pass); setPopupStatus("Password copied!", false, 1500); } catch (err) { setPopupStatus("Copy failed.", true); console.error('Clipboard err:', err); alert("Copy failed."); }
 }
-async function handleFillPassword(listItem) {
-    let password = listItem.dataset.decryptedPassword; let username = listItem.dataset.decryptedUsername; if (!password) { setPopupStatus("Decrypting to fill...", false); await handleShowDetails(listItem); password = listItem.dataset.decryptedPassword; username = listItem.dataset.decryptedUsername; clearPopupStatus(); if (!password) { alert("Decryption failed. Cannot fill."); return; } } handleDirectFill(username || '', password);
+async function handleFillPassword(listItem) { /* ... (code as before) ... */
+     let pass = listItem.dataset.decryptedPassword; let user = listItem.dataset.decryptedUsername; if (!pass) { setPopupStatus("Decrypting...", false); await handleShowDetails(listItem); pass = listItem.dataset.decryptedPassword; user = listItem.dataset.decryptedUsername; clearPopupStatus(); if (!pass) { alert("Decrypt failed."); return; } } handleDirectFill(user || '', pass);
 }
-async function handleDirectFill(username, password) {
-    try { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); if (tab?.id) { chrome.tabs.sendMessage(tab.id, { action: 'fillPassword', username: username, password: password }, (response) => { if (chrome.runtime.lastError) { console.error("Fill Error (sending message):", chrome.runtime.lastError.message); setPopupStatus("Error sending fill command.", true, 2000); } else if (response && response.success) { console.log("Fill command sent successfully."); window.close(); } else { console.warn("Content script did not acknowledge fill command or reported failure."); setPopupStatus("Fill command sent.", false, 1500); } }); } else { throw new Error("No active tab found or tab has no ID."); } } catch (error) { setPopupStatus(`Fill Error: ${error.message}`, true); console.error("Fill error:", error); }
+async function handleDirectFill(username, password) { /* ... (code as before) ... */
+     setPopupStatus(`Filling ${currentDomain}...`, false); try { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); if (tab?.id) { chrome.tabs.sendMessage(tab.id, { action: 'fillPassword', username: username, password: password }, (resp) => { if (chrome.runtime.lastError) { console.error("Fill Send Error:", chrome.runtime.lastError.message); setPopupStatus("Error sending fill.", true, 3000); } else if (resp?.success) { window.close(); } else { console.warn("Fill failed/not ack."); setPopupStatus("Fill sent.", false, 2000); } }); } else { throw new Error("No active tab."); } } catch (error) { setPopupStatus(`Fill Error: ${error.message}`, true); console.error("Fill error:", error); }
 }
 
-
-// --- Password Strength Checking (in Popup Add Form) ---
-function handlePopupPasswordInput() {
-    const password = newPasswordInput.value; const assessmentMap = ["Very Weak", "Weak", "Medium", "Strong", "Very Strong"];
-    if (password && typeof zxcvbn === 'function') { const result = zxcvbn(password); const score = result.score; const strengthClass = getStrengthClassFromScore(score); popupStrengthArea.style.display = 'block'; popupStrengthIndicator.className = `popup-strength-indicator ${strengthClass}`; popupStrengthTextLabel.textContent = `Strength: ${assessmentMap[score]}`; popupStrengthFeedbackDiv.innerHTML = formatZxcvbnFeedbackPopup(result); popupStrengthArea.className = `popup-strength-area strength-${score}`; }
-    else { popupStrengthArea.style.display = 'none'; popupStrengthIndicator.className = 'popup-strength-indicator very-weak'; popupStrengthTextLabel.textContent = 'Strength:'; popupStrengthFeedbackDiv.innerHTML = ''; popupStrengthArea.className = 'popup-strength-area'; }
+// --- Password Generation ---
+async function handleGeneratePopupPassword() { /* ... (code as before - uses dispatchEvent now) ... */
+     hideSaveError(); if (generatePopupPasswordBtn) { generatePopupPasswordBtn.disabled = true; generatePopupPasswordBtn.textContent = '...'; }
+     const opts = { length: popupGenLengthSlider ? parseInt(popupGenLengthSlider.value, 10) : 16, use_lowercase: popupGenLowercaseCheckbox?.checked ?? true, use_uppercase: popupGenUppercaseCheckbox?.checked ?? true, use_digits: popupGenDigitsCheckbox?.checked ?? true, use_symbols: popupGenSymbolsCheckbox?.checked ?? true };
+     if (!opts.use_lowercase && !opts.use_uppercase && !opts.use_digits && !opts.use_symbols) { showSaveError("Select character type."); if (generatePopupPasswordBtn) { generatePopupPasswordBtn.disabled = false; generatePopupPasswordBtn.textContent = 'Generate'; } return; }
+     try { const resp = await fetch(`${API_BASE_URL}/api/generate_password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(opts) }); const res = await resp.json(); if (resp.ok && res.password) { if (newPasswordInput) { newPasswordInput.value = res.password; newPasswordInput.type = 'text'; newPasswordInput.dispatchEvent(new Event('input', { bubbles: true })); setTimeout(() => { if (newPasswordInput?.type === 'text') newPasswordInput.type = 'password'; }, 2000); } } else { throw new Error(res.error || 'API gen failed.'); } } catch (error) { showSaveError(`Generate Error: ${error.message}`); console.error('Generate Err:', error); } finally { if (generatePopupPasswordBtn) { generatePopupPasswordBtn.disabled = false; generatePopupPasswordBtn.textContent = 'Generate'; } }
 }
-function formatZxcvbnFeedbackPopup(result) {
-     let html = '<ul>'; if (result.feedback.warning) { html += `<li class="warning">${escapeHtml(result.feedback.warning)}</li>`; } if (result.feedback.suggestions && result.feedback.suggestions.length > 0) { result.feedback.suggestions.forEach(s => { html += `<li class="suggestion">${escapeHtml(s)}</li>`; }); } else if (!result.feedback.warning) { if (result.score < 3) html += '<li class="suggestion">Consider adding length or variety (caps, numbers, symbols).</li>'; else html += '<li class="suggestion">Looks reasonably strong!</li>'; } html += '</ul>'; return html;
- }
-function getStrengthClassFromScore(score) { const classes = ['very-weak', 'weak', 'medium', 'strong', 'very-strong']; return classes[score] || 'very-weak'; }
-
-
-// --- Password Generation (in Popup Add Form) ---
-async function handleGeneratePopupPassword() {
-     hideSaveError(); generatePopupPasswordBtn.disabled = true; generatePopupPasswordBtn.textContent = '...'; const options = { length: parseInt(popupGenLengthSlider.value, 10), use_lowercase: popupGenLowercaseCheckbox.checked, use_uppercase: popupGenUppercaseCheckbox.checked, use_digits: popupGenDigitsCheckbox.checked, use_symbols: popupGenSymbolsCheckbox.checked };
-     try { const response = await fetch(`${API_BASE_URL}/api/generate_password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(options) }); const result = await response.json(); if (response.ok && result.password) { newPasswordInput.value = result.password; newPasswordInput.type = 'text'; handlePopupPasswordInput(); setTimeout(() => { if (newPasswordInput.type === 'text') newPasswordInput.type = 'password'; }, 2000); } else { throw new Error(result.error || 'Failed to generate password from API.'); } } catch (error) { showSaveError(`Generate Error: ${error.message}`); console.error('Generate Password Error (Popup):', error); } finally { generatePopupPasswordBtn.disabled = false; generatePopupPasswordBtn.textContent = 'Generate'; }
-}
-
 
 // --- Save New Password ---
-async function handleSavePassword() {
-    const service = serviceInput.value.trim(); const username = newUsernameInput.value.trim(); const password = newPasswordInput.value; const masterPassword = masterPasswordSaveInput.value;
-    if (!service || !username || !password || !masterPassword) { showSaveError("All fields & Master Password required to save."); return; }
-    hideSaveError(); savePasswordBtn.disabled = true; savePasswordBtn.textContent = 'Saving...';
-    try {
-        if (!userEmail) throw new Error("User email missing. Cannot save.");
-        const confirmationKeyBuffer = await deriveKeyRawBytes(masterPassword, userEmail);
-        if (!confirmationKeyBuffer) throw new Error("Key derivation failed. Incorrect Master Password?");
-        if (!derivedEncryptionKey) throw new Error("Encryption key not available. Please unlock first.");
-        // Simple byte comparison check
-        if (confirmationKeyBuffer.byteLength !== derivedEncryptionKey.byteLength || !new Uint8Array(confirmationKeyBuffer).every((val, i) => val === new Uint8Array(derivedEncryptionKey)[i])) { throw new Error("Master Password does not match the one used for unlock."); }
-
-        const dataToEncrypt = { service, username, password };
-        const encryptedB64Data = await encryptData(derivedEncryptionKey, dataToEncrypt); // Assumes encryptData is loaded
-        const response = await fetch(`${API_BASE_URL}/api/credentials`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ encrypted_data: encryptedB64Data, service_hint: service }) });
-        const result = await response.json(); if (response.ok && result.success) { setPopupStatus("Credential saved!", false, 2000); hideAddForm(); await loadAndDisplayCredentials(); }
-        else { throw new Error(result.message || `Save failed (${response.status})`); }
-    } catch (error) { showSaveError(`Save failed: ${error.message}`); console.error('Save error:', error); }
-    finally { savePasswordBtn.disabled = false; savePasswordBtn.textContent = 'Encrypt & Save'; masterPasswordSaveInput.value = ''; }
+async function handleSavePassword() { /* ... (code as before) ... */
+    const service = serviceInput ? serviceInput.value.trim() : ''; const username = newUsernameInput ? newUsernameInput.value.trim() : ''; const password = newPasswordInput ? newPasswordInput.value : ''; const masterPassword = masterPasswordSaveInput ? masterPasswordSaveInput.value : '';
+    if (!service || !username || !password || !masterPassword) { showSaveError("All fields & Master PW required."); return; }
+    hideSaveError(); if (savePasswordBtn) { savePasswordBtn.disabled = true; savePasswordBtn.textContent = 'Saving...'; }
+    try { if (!userEmail || !derivedEncryptionKey) throw new Error("Session key missing."); const confirmKey = await deriveKeyRawBytes(masterPassword, userEmail); if (!compareArrayBuffers(confirmKey, derivedEncryptionKey)) throw new Error("Master PW mismatch."); const dataToEnc = { service, username, password }; const encData = await encryptData(derivedEncryptionKey, dataToEnc); const resp = await fetch(`${API_BASE_URL}/api/credentials`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ encrypted_data: encData, service_hint: service }) }); const res = await resp.json(); if (resp.ok && res.success) { setPopupStatus("Saved!", false, 2000); hideAddForm(); await loadAndDisplayCredentials(); } else { throw new Error(res.message || `Save failed (${resp.status})`); } }
+    catch (error) { showSaveError(`Save failed: ${error.message}`); console.error('Save error:', error); }
+    finally { if (savePasswordBtn) { savePasswordBtn.disabled = false; savePasswordBtn.textContent = 'Encrypt & Save'; } if (masterPasswordSaveInput) masterPasswordSaveInput.value = ''; }
 }
-
 
 // --- Search/Filter ---
-function handleSearchFilter() {
-    clearTimeout(window.searchDebounceTimer);
-    window.searchDebounceTimer = setTimeout(() => { filterAndRenderList(); }, 200);
+function handleSearchFilter() { /* ... (code as before) ... */
+    if (window.searchDebounceTimer) clearTimeout(window.searchDebounceTimer);
+    window.searchDebounceTimer = setTimeout(filterAndRenderList, 250);
 }
 
-// --- Utility ---
-async function getCurrentTabDomain() {
-    try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id) {
-            currentDomain = await new Promise((resolve) => {
-                let resolved = false;
-                 chrome.tabs.sendMessage(tab.id, { action: 'getDomain' }, (response) => {
-                     if (resolved) return; resolved = true;
-                     if (chrome.runtime.lastError) { console.warn("Get domain message error:", chrome.runtime.lastError.message); resolve((tab.url && tab.url.startsWith('http')) ? new URL(tab.url).hostname : 'N/A'); }
-                     else if (response && response.domain) { resolve(response.domain); }
-                     else { resolve('N/A'); }
-                 });
-                 setTimeout(() => { if (!resolved) { resolved = true; console.warn("Timeout getting domain from content script."); resolve((tab.url && tab.url.startsWith('http')) ? new URL(tab.url).hostname : 'N/A'); } }, 350);
-            });
-        } else { currentDomain = 'N/A'; }
-    } catch (error) { console.warn("Could not query active tab:", error); currentDomain = 'Error'; }
-    console.log("Current Domain set to:", currentDomain);
+// --- Utility: Get Current Tab Domain ---
+async function getCurrentTabDomain() { /* ... (code as before) ... */
+    try { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); if (tab?.id && tab.url?.startsWith('http')) { currentDomain = await new Promise((resolve) => { let resolved = false; const timer = setTimeout(() => { if (!resolved) { resolved = true; resolve(new URL(tab.url).hostname); } }, 350); chrome.tabs.sendMessage(tab.id, { action: 'getDomain' }, (resp) => { clearTimeout(timer); if (resolved) return; resolved = true; if (chrome.runtime.lastError || !resp?.domain) { resolve(new URL(tab.url).hostname); } else { resolve(resp.domain); } }); }); } else if (tab?.url?.startsWith('http')) { currentDomain = new URL(tab.url).hostname; } else { currentDomain = 'N/A'; } } catch (error) { console.warn("Get domain error:", error); currentDomain = 'Error'; } console.log("Domain:", currentDomain); updateDomainDisplay();
 }
+
+
+// --- DOMContentLoaded Listener (Main Entry Point) ---
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("Popup: DOMContentLoaded - Initializing...");
+    applyPopupTheme();
+
+    // --- Check Dependencies ---
+    let cryptoHelpersLoaded = typeof arrayBufferToBase64 !== 'undefined' && typeof base64ToArrayBuffer !== 'undefined' && typeof base64UrlDecode !== 'undefined' && typeof deriveKeyRawBytes !== 'undefined' && typeof decryptData !== 'undefined' && typeof encryptData !== 'undefined' && typeof sha1Hash !== 'undefined' && typeof checkHIBPPassword !== 'undefined' && typeof escapeHtml !== 'undefined';
+    let zxcvbnLoaded = typeof zxcvbn !== 'undefined';
+
+    if (!cryptoHelpersLoaded) { console.error("CRITICAL: Crypto helpers missing!"); showLoginView("Error: Missing functions."); return; }
+    if (!zxcvbnLoaded) { console.warn("zxcvbn missing."); if(popupStrengthArea) popupStrengthArea.style.display = 'none'; }
+
+    // --- Define Debounced Analysis Function (INSIDE DOMContentLoaded) ---
+    const debouncePopupAnalysis = debouncePopup(async function() {
+        const password = this.value; // 'this' is the input
+        const assessmentMap = ["Very Weak", "Weak", "Medium", "Strong", "Very Strong"];
+
+        if (!password) {
+            if (popupStrengthArea) popupStrengthArea.style.display = 'none';
+            if (popupBreachStatusArea) popupBreachStatusArea.style.display = 'none';
+            return;
+        }
+        if (popupStrengthArea) popupStrengthArea.style.display = 'block';
+        if (popupBreachStatusArea) popupBreachStatusArea.style.display = 'flex';
+        if (popupStrengthIndicator) popupStrengthIndicator.className = 'popup-strength-indicator';
+        if (popupStrengthTextLabel) popupStrengthTextLabel.textContent = 'Strength: Checking...';
+        if (popupStrengthFeedbackDiv) popupStrengthFeedbackDiv.innerHTML = '';
+        if (popupStrengthArea) popupStrengthArea.className = 'popup-strength-area';
+        if (popupBreachIndicator) { popupBreachIndicator.textContent = 'Checking...'; popupBreachIndicator.className = 'breach-indicator loading'; }
+
+        let strengthResult = null; let breachResultPromise = null;
+        if (zxcvbnLoaded) { try { strengthResult = zxcvbn(password); } catch(e) { console.error(e);}}
+        else { if(popupStrengthArea) popupStrengthArea.style.display = 'none'; }
+        if (cryptoHelpersLoaded) { breachResultPromise = checkHIBPPassword(password).catch(e => ({error: "Check failed"})); }
+        else { if(popupBreachStatusArea) popupBreachStatusArea.style.display = 'none'; breachResultPromise = Promise.resolve({ error: "Checker N/A" }); }
+
+        // Process Strength
+        if (strengthResult && popupStrengthIndicator && popupStrengthTextLabel && popupStrengthFeedbackDiv) {
+            const score = strengthResult.score;
+            popupStrengthIndicator.className = `popup-strength-indicator ${getStrengthClassFromScore(score)}`;
+            popupStrengthTextLabel.textContent = `Strength: ${assessmentMap[score]}`;
+            popupStrengthFeedbackDiv.innerHTML = formatZxcvbnFeedbackPopup(strengthResult);
+            popupStrengthArea.className = `popup-strength-area strength-${score}`;
+        }
+        // Process Breach
+        if (breachResultPromise && popupBreachIndicator) {
+            try { const br = await breachResultPromise; if (br.error) { popupBreachIndicator.textContent = `Error: ${escapeHtml(br.error)}`; popupBreachIndicator.className = 'breach-indicator error'; } else if (br.isPwned) { popupBreachIndicator.textContent = `Compromised! (${br.count})`; popupBreachIndicator.className = 'breach-indicator pwned'; } else { popupBreachIndicator.textContent = 'Not in breaches.'; popupBreachIndicator.className = 'breach-indicator safe'; } }
+            catch (error) { popupBreachIndicator.textContent = 'Error checking.'; popupBreachIndicator.className = 'breach-indicator error'; }
+        }
+    }, 600); // Debounce time
+
+    // --- Attach Event Listeners (INSIDE DOMContentLoaded) ---
+    if (loginBtn) loginBtn.addEventListener('click', handleLoginAttempt);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+    if (addPasswordBtn) addPasswordBtn.addEventListener('click', showAddForm);
+    if (cancelAddBtn) cancelAddBtn.addEventListener('click', hideAddForm);
+    if (savePasswordBtn) savePasswordBtn.addEventListener('click', handleSavePassword);
+    if (searchInput) searchInput.addEventListener('input', handleSearchFilter);
+    if (generatePopupPasswordBtn) generatePopupPasswordBtn.addEventListener('click', handleGeneratePopupPassword);
+    if (popupGenLengthSlider && popupGenLengthValueSpan) { popupGenLengthSlider.addEventListener('input', () => { popupGenLengthValueSpan.textContent = popupGenLengthSlider.value; }); }
+    if (newPasswordInput) { newPasswordInput.addEventListener('input', debouncePopupAnalysis); } // Attach listener here
+    if (popupThemeToggleBtn) popupThemeToggleBtn.addEventListener('click', togglePopupTheme);
+
+    // --- Initial Actions ---
+    await getCurrentTabDomain();
+    await checkLoginStatus();
+
+}); // --- END OF DOMContentLoaded ---
+
 // --- END OF FILE popup.js ---
-function escapeHtml(unsafe) {
-     if (typeof unsafe !== 'string') return '';
-     return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}

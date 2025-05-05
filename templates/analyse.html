@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analyse Passwords - Secure Password Manager</title>
+    <!-- Ensure correct path to your CSS file -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -13,6 +14,8 @@
              {% if current_user.is_authenticated %}
                  <a href="{{ url_for('logout') }}" class="logout-link">Logout ({{ current_user.email }})</a>
              {% endif %}
+             <!-- Optional: Add Theme Toggle if desired on this page -->
+             <!-- <button id="theme-toggle" title="Toggle light/dark theme">...</button> -->
             <nav>
                 <ul>
                     <li><a href="{{ url_for('add_password_page') }}">Add Password</a></li>
@@ -26,7 +29,7 @@
             <!-- Single Password Analysis Card -->
             <section class="card">
                 <h2>Analyse a Single Password</h2>
-                <p>Enter a password below to get an instant strength analysis using AI insights. The password itself is not stored or sent after analysis.</p>
+                <p>Enter a password below to get an instant strength analysis using AI insights and check if it has been compromised in known data breaches. The password itself is not stored or sent after analysis.</p>
                 <form id="analyse-form">
                     <div class="form-group">
                         <label for="analyse-password">Password to Analyse:</label>
@@ -38,20 +41,21 @@
                     </div>
                 </form>
 
-                <div id="single-loading" class="loading-indicator">
+                <div id="single-loading" class="loading-indicator" style="display: none;"> <!-- Initially hidden -->
                     <div class="spinner"></div>
                     <p>Analysing...</p>
                 </div>
 
                 <div id="single-analysis-result" class="analysis-result" style="display: none;">
                     <h3>Analysis Result</h3>
-                    <table class="analysis-table"> <!-- Use consistent class -->
+                    <table class="analysis-table">
                         <thead>
                             <tr>
                                 <th>Password</th>
                                 <th>Strength Bar</th>
                                 <th>Assessment</th>
                                 <th>AI Insights & Suggestions</th>
+                                <th>Breach Status</th> <!-- Added Breach Column -->
                             </tr>
                         </thead>
                         <tbody>
@@ -68,6 +72,10 @@
                                         <!-- Feedback items populated by JS -->
                                     </div>
                                 </td>
+                                <!-- Breach Status Cell -->
+                                <td class="breach-cell">
+                                     <span id="single-breach-indicator" class="breach-indicator"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -77,10 +85,10 @@
             <!-- All Stored Passwords Analysis Card -->
             <section class="card">
                 <h2>Analyse All Stored Credentials</h2>
-                <p>Decrypt and analyse all your stored credentials to identify potential weaknesses across your accounts. This may take some time depending on the number of credentials.</p>
+                <p>Decrypt and analyse all your stored credentials to identify potential weaknesses and check for compromises across your accounts. This may take some time depending on the number of credentials.</p>
                 <button id="analyse-all-btn" class="btn btn-secondary">Load & Analyse All Stored Credentials</button>
 
-                <div id="all-passwords-loading" class="loading-indicator">
+                <div id="all-passwords-loading" class="loading-indicator" style="display: none;"> <!-- Initially hidden -->
                     <div class="spinner"></div>
                     <p>Loading, decrypting, and analysing all credentials...</p>
                 </div>
@@ -97,6 +105,7 @@
                                     <th>Strength</th>
                                     <th>Assessment</th>
                                     <th>AI Insights & Suggestions</th>
+                                    <th>Breach Status</th> <!-- Corrected Column Header -->
                                 </tr>
                             </thead>
                             <tbody id="password-analysis-list">
@@ -113,35 +122,15 @@
         </footer>
     </div>
 
+    <!-- Include zxcvbn library FIRST if used for single analysis, otherwise only crypto helpers needed -->
+    <!-- <script src="{{ url_for('static', filename='js/zxcvbn.js') }}"></script> -->
+    <!-- Include Crypto Helpers (make sure path is correct) -->
+    <script src="{{ url_for('static', filename='js/crypto-helpers.js') }}"></script>
+
     <script>
-        // --- E2EE Helper Functions ---
-        function base64UrlDecode(b64url) {
-             let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/'); while (b64.length % 4) b64 += '='; return base64ToArrayBuffer(b64);
-        }
-        async function getEncryptionKeyRawBytes() {
-            const keyB64Url = sessionStorage.getItem('encryptionKey');
-            if (!keyB64Url) { console.error("Key missing"); alert("Key missing. Login again."); window.location.href="{{ url_for('login')}}"; return null; }
-            try { return base64UrlDecode(keyB64Url); } catch (e) { console.error("Key decode failed:", e); alert("Invalid key. Login again."); window.location.href="{{ url_for('login')}}"; return null; }
-        }
-        async function decryptData(keyBuffer, encryptedB64Data) {
-             try {
-                 const combinedData = base64ToArrayBuffer(encryptedB64Data); if (combinedData.byteLength < 12) throw new Error("Data too short.");
-                 const iv = combinedData.slice(0, 12); const ciphertext = combinedData.slice(12);
-                 const cryptoKey = await crypto.subtle.importKey("raw", keyBuffer, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-                 const decryptedContent = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, cryptoKey, ciphertext);
-                 return JSON.parse(new TextDecoder().decode(decryptedContent));
-             } catch (error) { console.error("Decryption error:", error); return null; }
-        }
-        function base64ToArrayBuffer(base64) {
-             try { const s=window.atob(base64), l=s.length, b=new Uint8Array(l); for(let i=0;i<l;i++) b[i]=s.charCodeAt(i); return b.buffer; }
-             catch(e) { console.error("B64 decode error:",e); throw new Error("Invalid Base64"); }
-        }
-        function arrayBufferToBase64(buffer) {
-             let bin=''; const bytes=new Uint8Array(buffer); const len=bytes.byteLength; for(let i=0;i<len;i++) bin+=String.fromCharCode(bytes[i]); return window.btoa(bin);
-        }
-        function escapeHtml(unsafe) {
-             return unsafe.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-        }
+        // --- E2EE Helper Functions (Assume they are loaded from crypto-helpers.js) ---
+        // Includes: base64UrlDecode, decryptData, base64ToArrayBuffer,
+        //           arrayBufferToBase64, escapeHtml, sha1Hash, checkHIBPPassword
 
         // --- Client-Side Password Analysis Helpers ---
         function getPasswordCharacteristics(password) {
@@ -153,24 +142,17 @@
                 else if (char >= '0' && char <= '9') comp.digits++; else if (!char.match(/^[a-zA-Z0-9\s]$/)) comp.special++;
             } return { length: password.length, composition: comp };
         }
-         function getStrengthClass(score) {
+         function getStrengthClass(score) { // Maps 1-5 score to CSS class
              if (score <= 1) return 'very-weak'; if (score === 2) return 'weak'; if (score === 3) return 'medium';
              if (score === 4) return 'strong'; return 'very-strong';
          }
-         function formatFeedbackHtml(feedbackArray) {
+         function formatFeedbackHtml(feedbackArray) { // Formats LLM/Basic feedback
             if (!feedbackArray || feedbackArray.length === 0) return '<div class="feedback-item tip">No specific issues found.</div>';
             let html = '<div class="feedback-section">';
             feedbackArray.forEach(fb => {
-                let itemClass = 'feedback-item'; // Default to neutral/tip style if no prefix
-                let text = fb;
-                // Check for prefixes (case-insensitive)
-                if (fb.toLowerCase().startsWith('issue:') || fb.toLowerCase().startsWith('warning:')) {
-                    itemClass += ' issue'; // Apply issue style
-                    text = fb.substring(fb.indexOf(':') + 1).trim(); // Get text after colon
-                } else if (fb.toLowerCase().startsWith('tip:') || fb.toLowerCase().startsWith('suggestion:')) {
-                    itemClass += ' tip'; // Apply tip style
-                    text = fb.substring(fb.indexOf(':') + 1).trim(); // Get text after colon
-                }
+                let itemClass = 'feedback-item'; let text = fb;
+                if (fb.toLowerCase().startsWith('issue:') || fb.toLowerCase().startsWith('warning:')) { itemClass += ' issue'; text = fb.substring(fb.indexOf(':') + 1).trim(); }
+                else if (fb.toLowerCase().startsWith('tip:') || fb.toLowerCase().startsWith('suggestion:')) { itemClass += ' tip'; text = fb.substring(fb.indexOf(':') + 1).trim(); }
                 html += `<div class="${itemClass}">${escapeHtml(text)}</div>`;
             });
             html += '</div>';
@@ -193,6 +175,7 @@
             const strengthText = document.getElementById('strength-text');
             const feedbackList = document.getElementById('feedback-list');
             const passwordValueCell = document.getElementById('password-value');
+            const singleBreachIndicator = document.getElementById('single-breach-indicator'); // Get breach element
             const singleSubmitBtn = analyseForm.querySelector('button[type="submit"]');
 
             // All Analysis Elements
@@ -207,32 +190,86 @@
                 const type = passwordInput.type === 'password' ? 'text' : 'password';
                 passwordInput.type = type; this.textContent = type === 'password' ? 'Show' : 'Hide';
             });
+
             analyseForm.addEventListener('submit', async function(e) {
-                e.preventDefault(); const password = passwordInput.value; if (!password) return;
-                singleLoadingEl.style.display = 'block'; singleAnalysisResultEl.style.display = 'none';
-                singleSubmitBtn.disabled = true; passwordValueCell.textContent = password.replace(/./g, '*');
+                e.preventDefault();
+                const password = passwordInput.value;
+                if (!password) return;
+
+                singleLoadingEl.style.display = 'block';
+                singleAnalysisResultEl.style.display = 'none';
+                singleSubmitBtn.disabled = true;
+                passwordValueCell.textContent = password.replace(/./g, '*'); // Mask password in table
+
+                // Reset previous results
+                strengthIndicator.style.width = '0%';
+                strengthIndicator.className = 'strength-indicator';
+                strengthText.textContent = 'Checking...';
+                feedbackList.innerHTML = '';
+                singleBreachIndicator.textContent = 'Checking...';
+                singleBreachIndicator.className = 'breach-indicator loading';
+
                 try {
                     const characteristics = getPasswordCharacteristics(password);
-                    const response = await fetch("{{ url_for('analyse_password_api') }}", {
+
+                    // --- Perform Checks Concurrently ---
+                    const analysisPromise = fetch("{{ url_for('analyse_password_api') }}", {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ characteristics: characteristics })
                     });
-                    if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(`Analysis failed: ${response.status} ${err.error || ''}`); }
-                    const analysisResult = await response.json();
-                    updateSingleAnalysisUI(analysisResult);
+                    // Ensure crypto-helpers is loaded and function exists
+                    const breachPromise = typeof checkHIBPPassword === 'function'
+                        ? checkHIBPPassword(password)
+                        : Promise.resolve({ error: "Breach check function not available." }); // Fallback
+
+                    // --- Process Analysis Results ---
+                    const analysisResponse = await analysisPromise;
+                     if (!analysisResponse.ok) {
+                        const err = await analysisResponse.json().catch(() => ({}));
+                        console.error(`Analysis API failed: ${analysisResponse.status} ${err.error || ''}`);
+                         strengthText.textContent = 'Error';
+                         feedbackList.innerHTML = `<div class="feedback-item issue">Analysis Failed</div>`;
+                         strengthIndicator.className = 'strength-indicator very-weak';
+                     } else {
+                         const analysisResult = await analysisResponse.json();
+                         updateSingleAnalysisUI(analysisResult); // Update strength part of UI
+                     }
+
+                    // --- Process Breach Results ---
+                    const breachResult = await breachPromise;
+                     if (breachResult.error) {
+                         singleBreachIndicator.textContent = `Error: ${escapeHtml(breachResult.error)}`;
+                         singleBreachIndicator.className = 'breach-indicator error';
+                     } else if (breachResult.isPwned) {
+                         singleBreachIndicator.textContent = `Compromised! Found in ${breachResult.count} breach${breachResult.count > 1 ? 'es' : ''}.`;
+                         singleBreachIndicator.className = 'breach-indicator pwned';
+                     } else {
+                         singleBreachIndicator.textContent = 'Not found in known breaches.';
+                         singleBreachIndicator.className = 'breach-indicator safe';
+                     }
+
                 } catch (error) {
-                    console.error('Single analysis error:', error); alert(`Error: ${error.message}`);
-                    singleAnalysisResultEl.style.display = 'block'; feedbackList.innerHTML = `<div class="feedback-item issue">Failed: ${escapeHtml(error.message)}</div>`;
-                    strengthIndicator.style.width = '0%'; strengthText.textContent = 'Error';
-                } finally { singleLoadingEl.style.display = 'none'; singleSubmitBtn.disabled = false; }
+                    console.error('Single analysis processing error:', error);
+                    // Display generic error if fetch/processing fails broadly
+                    strengthText.textContent = 'Error';
+                    feedbackList.innerHTML = `<div class="feedback-item issue">Failed: ${escapeHtml(error.message)}</div>`;
+                    singleBreachIndicator.textContent = 'Error checking.';
+                    singleBreachIndicator.className = 'breach-indicator error';
+                    strengthIndicator.className = 'strength-indicator very-weak';
+
+                } finally {
+                    singleLoadingEl.style.display = 'none';
+                    singleAnalysisResultEl.style.display = 'block'; // Show results table
+                    singleSubmitBtn.disabled = false;
+                }
             });
-             function updateSingleAnalysisUI(data) {
-                 singleAnalysisResultEl.style.display = 'block'; const score = data.strength || 1;
+
+             function updateSingleAnalysisUI(data) { // Only updates strength part now
+                 const score = data.strength || 1;
                  strengthIndicator.style.width = (score / 5) * 100 + '%';
                  strengthIndicator.className = 'strength-indicator ' + getStrengthClass(score);
                  strengthText.textContent = data.assessment || 'Unknown';
-                 const feedbackCellContent = feedbackList; // Directly target the div
-                  if (feedbackCellContent) feedbackCellContent.innerHTML = formatFeedbackHtml(data.feedback);
+                  if (feedbackList) feedbackList.innerHTML = formatFeedbackHtml(data.feedback);
              }
 
             // --- All Analysis Logic ---
@@ -241,63 +278,163 @@
                 passwordAnalysisListBody.innerHTML = ''; allAnalysisStatus.textContent = ''; allAnalysisStatus.style.color = '';
                 analyseAllBtn.disabled = true;
                 try {
-                    const encryptionKey = await getEncryptionKeyRawBytes(); if (!encryptionKey) throw new Error("Key missing. Login again.");
+                    // ***** CORRECTED KEY RETRIEVAL *****
+                    const keyB64Url = sessionStorage.getItem('encryptionKey');
+                    if (!keyB64Url) {
+                        console.error("Encryption key missing from sessionStorage.");
+                        throw new Error("Key missing. Please login again.");
+                    }
+                    let encryptionKey = null;
+                    try {
+                        // Assuming base64UrlDecode is loaded from crypto-helpers.js
+                        encryptionKey = base64UrlDecode(keyB64Url);
+                    } catch (e) {
+                        console.error("Failed to decode encryption key:", e);
+                        throw new Error("Invalid encryption key format. Please login again.");
+                    }
+                    if (!encryptionKey) { // Should not happen if decode worked, but for safety
+                        throw new Error("Key decoding failed unexpectedly. Please login again.");
+                    }
+                    // ***** END KEY RETRIEVAL CORRECTION *****
+
                     allAnalysisStatus.textContent = 'Fetching credentials...';
                     const credResponse = await fetch("{{ url_for('get_credentials') }}");
-                    if (!credResponse.ok) throw new Error('Failed to fetch credentials');
+                    if (!credResponse.ok) {
+                        if (credResponse.status === 401) {
+                             throw new Error('Unauthorized (401). Session likely expired. Please re-login.');
+                        }
+                        throw new Error(`Failed to fetch credentials (${credResponse.status})`);
+                    }
+
                     const encryptedCredentials = await credResponse.json();
                     if (!encryptedCredentials || encryptedCredentials.length === 0) {
                         allAnalysisStatus.textContent = 'No stored credentials found.'; allPasswordsLoadingEl.style.display = 'none'; analyseAllBtn.disabled = false; return;
                     }
                     allAnalysisStatus.textContent = `Found ${encryptedCredentials.length}. Analysing...`;
-                    let analysedCount = 0; const totalCount = encryptedCredentials.length; const results = [];
+                    let analysedCount = 0; const totalCount = encryptedCredentials.length;
                     allPasswordsAnalysisEl.style.display = 'block'; // Show table header
 
-                    for (const cred of encryptedCredentials) {
-                        const decrypted = await decryptData(encryptionKey, cred.encrypted_data);
-                        let analysisResult = { strength: 0, assessment: 'Error', feedback: ['Issue: Processing Error'] }; // Default error state
+                    // Use Promise.allSettled for concurrency
+                    const analysisPromises = encryptedCredentials.map(async (cred) => {
+                        const decrypted = await decryptData(encryptionKey, cred.encrypted_data); // Assumes decryptData is loaded
+                        let analysisResult = { strength: 0, assessment: 'Error', feedback: ['Issue: Processing Error'] };
+                        let breachResult = { isPwned: false, count: null, error: "Not checked" };
                         let serviceName = cred.service_hint || `(Hint: ${cred.id.substring(0,8)})`;
                         let userName = '(Unknown)';
+                        let passwordForChecks = null;
 
                         if (decrypted) {
-                            serviceName = decrypted.service || serviceName; // Prefer decrypted name
+                            serviceName = decrypted.service || serviceName;
                             userName = decrypted.username || userName;
-                            if (decrypted.password) {
-                                const characteristics = getPasswordCharacteristics(decrypted.password);
-                                try {
-                                    const apiResp = await fetch("{{ url_for('analyse_password_api') }}", {
-                                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ characteristics: characteristics })
-                                    });
-                                    if (apiResp.ok) analysisResult = await apiResp.json();
-                                    else { analysisResult.assessment = 'API Error'; analysisResult.feedback = ['Issue: Analysis service failed.']; }
-                                } catch (apiError) { analysisResult.assessment = 'API Error'; analysisResult.feedback = [`Issue: ${apiError.message}`]; }
-                            } else { analysisResult.assessment = 'No Password'; analysisResult.feedback = ['Issue: No password found in decrypted data.']; }
-                        } else { analysisResult.assessment = 'Decrypt Error'; analysisResult.feedback = ['Issue: Could not decrypt data.']; userName = '(Decryption Failed)'; }
+                            passwordForChecks = decrypted.password || null;
 
-                        results.push({ service: serviceName, username: userName, ...analysisResult });
-                        analysedCount++;
-                        allAnalysisStatus.textContent = `Analysed ${analysedCount} of ${totalCount}...`;
-                        // Optional small delay
-                        // await new Promise(resolve => setTimeout(resolve, 10));
-                    } // End loop
-                    displayAllAnalysisResults(results);
-                    allAnalysisStatus.textContent = `Analysis complete for ${results.length}.`;
+                            if (passwordForChecks) {
+                                // Perform LLM/Basic Analysis (async)
+                                const characteristics = getPasswordCharacteristics(passwordForChecks);
+                                const analysisApiPromise = fetch("{{ url_for('analyse_password_api') }}", {
+                                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ characteristics: characteristics })
+                                }).then(async resp => {
+                                    if (resp.ok) return await resp.json();
+                                    console.warn(`Analysis API failed for ${serviceName}: ${resp.status}`);
+                                    return { strength: 0, assessment: 'API Error', feedback: ['Issue: Analysis service failed.'] };
+                                }).catch(apiError => {
+                                     console.error(`Fetch error for analysis API (${serviceName}):`, apiError);
+                                     return { strength: 0, assessment: 'Fetch Error', feedback: [`Issue: ${apiError.message}`] };
+                                 });
+
+                                // Perform HIBP Breach Check (async)
+                                const breachCheckPromise = (typeof checkHIBPPassword === 'function')
+                                     ? checkHIBPPassword(passwordForChecks)
+                                          .catch(hibpError => {
+                                               console.error("Error during HIBP check for", serviceName, hibpError);
+                                               return { isPwned: false, count: null, error: "Check failed" };
+                                           })
+                                     : Promise.resolve({ isPwned: false, count: null, error: "Checker fn missing" });
+
+                                // Await both results
+                                [analysisResult, breachResult] = await Promise.all([analysisApiPromise, breachCheckPromise]);
+
+                            } else {
+                                analysisResult = { strength: 0, assessment: 'No Password', feedback: ['Issue: No password found.'] };
+                                breachResult = { isPwned: false, count: null, error: "No password" };
+                            }
+                        } else {
+                             analysisResult = { strength: 0, assessment: 'Decrypt Error', feedback: ['Issue: Could not decrypt data.'] };
+                             userName = '(Decryption Failed)';
+                             breachResult = { isPwned: false, count: null, error: "Decryption failed" };
+                        }
+
+                         analysedCount++;
+                         allAnalysisStatus.textContent = `Analysed ${analysedCount} of ${totalCount}...`;
+
+                        return { service: serviceName, username: userName, analysis: analysisResult, breach: breachResult };
+                    }); // End of map
+
+                    // Wait for all analyses to settle
+                    const settledResults = await Promise.allSettled(analysisPromises);
+                    const finalResults = settledResults
+                        .filter(result => result.status === 'fulfilled')
+                        .map(result => result.value);
+
+                     settledResults.forEach((result, index) => {
+                         if(result.status === 'rejected') { console.error(`Analysis promise rejected for index ${index}:`, result.reason); }
+                     });
+
+                    displayAllAnalysisResults(finalResults);
+                    allAnalysisStatus.textContent = `Analysis complete for ${finalResults.length} credentials.`;
+
                 } catch (error) {
-                    console.error('All analysis error:', error); allAnalysisStatus.textContent = `Error: ${error.message}`; allAnalysisStatus.style.color = 'red';
-                } finally { allPasswordsLoadingEl.style.display = 'none'; analyseAllBtn.disabled = false; }
+                    console.error('All analysis processing error:', error); // Log the full error object
+                    allAnalysisStatus.textContent = `Error: ${error.message || 'An unknown error occurred'}`; // Display message
+                    allAnalysisStatus.style.color = 'red';
+                    if (error.message.includes('Unauthorized (401)')) {
+                         setTimeout(() => window.location.href = "{{ url_for('login') }}", 3000);
+                    }
+                } finally {
+                    allPasswordsLoadingEl.style.display = 'none';
+                    analyseAllBtn.disabled = false;
+                }
             });
 
+            // --- Modify displayAllAnalysisResults ---
             function displayAllAnalysisResults(results) {
-                passwordAnalysisListBody.innerHTML = ''; allPasswordsAnalysisEl.style.display = 'block';
-                if (results.length === 0) { passwordAnalysisListBody.innerHTML = '<tr><td colspan="5">No results.</td></tr>'; return; }
+                passwordAnalysisListBody.innerHTML = '';
+                allPasswordsAnalysisEl.style.display = 'block';
+                if (results.length === 0) {
+                    passwordAnalysisListBody.innerHTML = '<tr><td colspan="6">No results to display.</td></tr>'; // Colspan is 6
+                    return;
+                }
                 results.forEach((item) => {
-                    const row = passwordAnalysisListBody.insertRow(); const score = item.strength || 0;
-                    const strengthClass = getStrengthClass(score); // You have this helper
-                    const feedbackHtml = formatFeedbackHtml(item.feedback); // Use updated formatter
+                    const row = passwordAnalysisListBody.insertRow();
+                    const analysis = item.analysis || { strength: 0, assessment: 'N/A', feedback: [] };
+                    const breach = item.breach || { isPwned: false, count: null, error: "Unknown" };
+                    const score = analysis.strength || 0;
+                    const strengthClass = getStrengthClass(score);
+                    const feedbackHtml = formatFeedbackHtml(analysis.feedback);
+
+                    // Breach Status Cell Content
+                    let breachHtml = ''; let breachClass = ''; let breachTitle = '';
+                    if (breach.error) {
+                         breachHtml = `Error`;
+                         breachClass = 'error';
+                         breachTitle = escapeHtml(breach.error);
+                    } else if (breach.isPwned) {
+                         breachHtml = `Compromised! (${breach.count})`;
+                         breachClass = 'pwned';
+                         breachTitle = `Found in ${breach.count} known breach(es).`;
+                    } else {
+                         breachHtml = `Not Found`;
+                         breachClass = 'safe';
+                         breachTitle = 'Not found in known breaches.';
+                    }
+
                     row.innerHTML = `
-                        <td>${escapeHtml(item.service)}</td><td>${escapeHtml(item.username)}</td>
+                        <td>${escapeHtml(item.service)}</td>
+                        <td>${escapeHtml(item.username)}</td>
                         <td><div class="strength-bar-table" title="Strength: ${score}/5"><div class="strength-indicator-table ${strengthClass}" style="width: ${(score/5)*100}%"></div></div></td>
-                        <td>${escapeHtml(item.assessment || 'N/A')}</td><td>${feedbackHtml}</td>
+                        <td>${escapeHtml(analysis.assessment || 'N/A')}</td>
+                        <td>${feedbackHtml}</td>
+                        <td class="breach-cell breach-${breachClass}" title="${breachTitle}"><span>${breachHtml}</span></td> <!-- Added Breach Cell with title -->
                     `;
                 });
             }

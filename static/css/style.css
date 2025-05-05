@@ -775,4 +775,96 @@ body[data-theme="dark"] .feedback-item.tip { background-color: #0e3842; border-l
     th, td { padding: 10px 12px; font-size: 0.85em; }
     .auth-container { padding: 25px; }
 }
-/* --- END OF FILE static/style.css --- */
+/* --- Add to static/style.css --- */
+
+/* Breach Status Area (General) */
+.breach-status-area {
+    display: flex; /* Use flex for alignment */
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em; /* Slightly smaller font */
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--strength-border-color); /* Separator line */
+}
+.breach-label {
+    font-weight: 600;
+    color: var(--text-secondary-color);
+    flex-shrink: 0; /* Prevent label from shrinking */
+}
+.breach-indicator {
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+/* Breach Indicator States */
+.breach-indicator.loading {
+    color: var(--text-secondary-color);
+    font-style: italic;
+}
+.breach-indicator.safe {
+    color: var(--success-color); /* Green for safe */
+}
+body[data-theme="dark"] .breach-indicator.safe {
+    color: #75b798; /* Lighter green for dark mode */
+}
+.breach-indicator.pwned {
+    color: var(--danger-color); /* Red for pwned */
+    font-weight: 700; /* Make it bold */
+}
+body[data-theme="dark"] .breach-indicator.pwned {
+    color: #f1aeb5; /* Lighter red for dark mode */
+}
+.breach-indicator.error {
+    color: var(--warning-color); /* Orange/yellow for error */
+    font-style: italic;
+}
+body[data-theme="dark"] .breach-indicator.error {
+    color: #ffda6a; /* Lighter warning color */
+}
+
+
+/* Popup Specific Breach Styles */
+#popup-breach-status {
+    margin-top: 5px;
+    padding-top: 5px;
+    font-size: 0.85em; /* Even smaller in popup */
+    border-top-style: dotted; /* Dotted line in popup */
+}
+#popup-breach-status .breach-label {
+    width: 50px; /* Fixed width for label in popup */
+}
+
+/* Breach Status in List Items (Popup) */
+.breach-display-popup {
+    font-size: 0.8em;
+    text-align: right;
+    margin-top: 4px;
+    padding-right: 5px;
+    font-weight: 500;
+    transition: color var(--popup-transition);
+}
+.breach-display-popup.loading { color: var(--popup-text-secondary); font-style: italic;}
+.breach-display-popup.safe { color: var(--popup-success-color); }
+.breach-display-popup.pwned { color: var(--popup-danger-color); font-weight: 700;}
+.breach-display-popup.error { color: #fd7e14; /* Orange for error in popup list */ font-style: italic;} /* Use a distinct error color */
+body[data-theme="dark"] .breach-display-popup.safe { color: #75b798; }
+body[data-theme="dark"] .breach-display-popup.pwned { color: #f1aeb5; }
+body[data-theme="dark"] .breach-display-popup.error { color: #ffac4d; }
+
+
+/* Analyse Page Table Breach Cell */
+.analysis-table th:last-child { width: 15%; } /* Adjust width for new column */
+.analysis-table td.breach-cell {
+    font-weight: 500;
+    text-align: center;
+}
+.analysis-table td.breach-safe span { color: var(--success-color); }
+.analysis-table td.breach-pwned span { color: var(--danger-color); font-weight: 700; }
+.analysis-table td.breach-error span { color: #856404; font-style: italic; } /* Muted warning color for table */
+
+body[data-theme="dark"] .analysis-table td.breach-safe span { color: #75b798; }
+body[data-theme="dark"] .analysis-table td.breach-pwned span { color: #f1aeb5; }
+body[data-theme="dark"] .analysis-table td.breach-error span { color: #ffda6a; }
+
+/* --- End of style.css additions --- */

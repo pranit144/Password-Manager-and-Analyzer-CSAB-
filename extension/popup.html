@@ -335,6 +335,7 @@
                                     <span class="username-display">(Username Hidden)</span>
                                 </div>
                                 <div class="strength-display-popup score-x">Strength: ...</div>
+                                <div class="breach-display-popup">Breach: ...</div> // <-- Add this
                             </div>
                             <div class="item-actions">
                                 <button>Show</button>
@@ -363,16 +364,16 @@
                     <input type="password" id="new-password" placeholder="Enter or generate password" required>
 
                     <!-- Popup Strength Display -->
-                    <div id="popup-strength-area" class="popup-strength-area" style="display: none;"> <!-- Initially hidden -->
-                        <div class="popup-strength-meter-container">
-                             <span class="popup-strength-label" id="popup-strength-text-label">Strength:</span>
-                             <div class="popup-strength-bar">
-                                 <div id="popup-strength-indicator" class="popup-strength-indicator very-weak"></div> <!-- Default class -->
-                             </div>
-                        </div>
+                    <div id="popup-strength-area" class="popup-strength-area" style="display: none;">
+                        <!-- ... strength meter ... -->
                         <div id="popup-strength-feedback"></div>
+                        <!-- ** NEW: Popup Breach Status ** -->
+                        <div id="popup-breach-status" class="breach-status-area" style="display: none; margin-top: 5px; font-size: 0.85em;">
+                             <span class="breach-label">Breach:</span>
+                             <span id="popup-breach-indicator" class="breach-indicator">Checking...</span>
+                        </div>
+                         <!-- ** END Popup Breach Status ** -->
                     </div>
-                    <!-- End Popup Strength Display -->
 
                     <!-- Generator Options -->
                     <div class="popup-generator-options">
