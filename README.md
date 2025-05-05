@@ -1,4 +1,4 @@
-# Secure E2EE Password Manager & Analyzer
+# Secure Password Manager & Analyzer
 
 This project combines a Flask web application with a Chrome browser extension to provide a secure password management solution featuring End-to-End Encryption (E2EE), password strength analysis, and breach detection. User credentials are encrypted client-side before being sent to a Supabase backend, ensuring the server never sees plaintext passwords.
 
