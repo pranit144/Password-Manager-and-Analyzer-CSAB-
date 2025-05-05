@@ -6,19 +6,20 @@
     <title>Add Password - Secure Password Manager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body data-theme="light"> <!-- Add default theme -->
     <div class="container">
         <header>
             <h1>Secure Password Manager</h1>
              {% if current_user.is_authenticated %}
-                 <a href="{{ url_for('logout') }}" class="logout-link">Logout ({{ current_user.email }})</a>
+                 <div class="header-controls"> <!-- Moved controls here -->
+                     <a href="{{ url_for('logout') }}" class="logout-link">Logout ({{ current_user.email }})</a>
+                     <!-- Theme Toggle Button -->
+                     <button id="theme-toggle" title="Toggle theme">
+                        <span class="icon-sun">☀️</span>
+                        <span class="icon-moon" style="display:none;">🌙</span>
+                    </button>
+                 </div>
              {% endif %}
-             <div class="header-controls"> <!-- Moved controls here -->
-                 <button id="theme-toggle" title="Toggle light/dark theme">
-                    <span class="icon-sun">☀️</span>
-                    <span class="icon-moon" style="display:none;">🌙</span>
-                </button>
-             </div>
             <nav>
                 <ul>
                     <li><a href="{{ url_for('add_password_page') }}" class="active">Add Password</a></li>
@@ -42,32 +43,27 @@
                     </div>
                     <div class="form-group">
                         <label for="password">Password:</label>
-                        <div class="password-input-group">
-                            <input type="password" id="password" name="password" required autocomplete="new-password" style="padding-right: 100px;"> <!-- Adjusted padding -->
+                        <div class="password-input-group"> <!-- Use helper class -->
+                            <input type="password" id="password" name="password" required autocomplete="new-password">
                             <button type="button" id="toggle-password" class="toggle-button" title="Show/hide password">Show</button>
                             <button type="button" id="generate-password-btn" class="btn btn-outline-secondary btn-sm generate-button">Generate</button>
                         </div>
                     </div>
 
                     <!-- Password Strength & Breach Display Area -->
-                    <div id="password-strength-area" class="password-strength-area" style="display: none;"> <!-- Initially hidden -->
+                    <div id="password-strength-area" class="password-strength-area" style="display: none;">
                         <div class="strength-meter-container">
                              <span class="strength-label" id="strength-text-label">Strength:</span>
                              <div class="strength-bar">
                                  <div id="strength-indicator" class="strength-indicator"></div>
                              </div>
                         </div>
-                        <div id="password-strength-feedback">
-                            <!-- Strength feedback messages will appear here -->
-                        </div>
-                        <!-- ** NEW: Breach Status ** -->
-                        <div id="password-breach-status" class="breach-status-area" style="display: none; margin-top: 10px;">
+                        <div id="password-strength-feedback"></div>
+                        <div id="password-breach-status" class="breach-status-area" style="display: none;">
                              <span class="breach-label">Breach Check:</span>
                              <span id="breach-status-indicator" class="breach-indicator">Checking...</span>
                         </div>
-                        <!-- ** END Breach Status ** -->
                     </div>
-                    <!-- End Password Strength & Breach Display Area -->
 
                     <!-- Generator Options -->
                     <div id="generator-options" class="generator-options">
@@ -78,25 +74,12 @@
                             <span class="length-display" id="gen-length-value">16</span>
                         </div>
                         <div class="char-options">
-                            <div class="option-group">
-                                <input type="checkbox" id="gen-lowercase" name="gen-lowercase" checked>
-                                <label for="gen-lowercase">Lowercase (a-z)</label>
-                            </div>
-                            <div class="option-group">
-                                <input type="checkbox" id="gen-uppercase" name="gen-uppercase" checked>
-                                <label for="gen-uppercase">Uppercase (A-Z)</label>
-                            </div>
-                            <div class="option-group">
-                                <input type="checkbox" id="gen-digits" name="gen-digits" checked>
-                                <label for="gen-digits">Digits (0-9)</label>
-                            </div>
-                            <div class="option-group">
-                                <input type="checkbox" id="gen-symbols" name="gen-symbols" checked>
-                                <label for="gen-symbols">Symbols (!@#...)</label>
-                            </div>
+                            <div class="option-group"> <input type="checkbox" id="gen-lowercase" name="gen-lowercase" checked> <label for="gen-lowercase">Lowercase (a-z)</label> </div>
+                            <div class="option-group"> <input type="checkbox" id="gen-uppercase" name="gen-uppercase" checked> <label for="gen-uppercase">Uppercase (A-Z)</label> </div>
+                            <div class="option-group"> <input type="checkbox" id="gen-digits" name="gen-digits" checked> <label for="gen-digits">Digits (0-9)</label> </div>
+                            <div class="option-group"> <input type="checkbox" id="gen-symbols" name="gen-symbols" checked> <label for="gen-symbols">Symbols (!@#...)</label> </div>
                         </div>
                     </div>
-                    <!-- End Generator Options -->
 
                     <div class="form-group">
                         <button type="submit" class="btn">Encrypt & Save</button>
@@ -111,81 +94,71 @@
         </footer>
     </div>
 
-    <!-- Include zxcvbn library FIRST -->
+    <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/zxcvbn.js') }}"></script>
-    <!-- Include crypto helpers SECOND (provides HIBP check) -->
     <script src="{{ url_for('static', filename='js/crypto-helpers.js') }}"></script>
-    <!-- Your page-specific script LAST -->
     <script>
-        // --- E2EE Helper Functions (Encryption/Decryption - Keep for saving) ---
-        function base64UrlDecode(b64url){let b64=b64url.replace(/-/g,'+').replace(/_/g,'/');while(b64.length%4){b64+='=';}return base64ToArrayBuffer(b64);}
-        // Ensure base64ToArrayBuffer and arrayBufferToBase64 are loaded from crypto-helpers.js
-        // async function getEncryptionKeyRawBytes(){ ... } // Keep this function if needed elsewhere, but primarily use sessionStorage key
-        async function getEncryptionKeyRawBytesFromSession(){ const k=sessionStorage.getItem('encryptionKey'); if(!k){console.error("Key missing.");alert("Key missing. Login.");window.location.href="{{ url_for('login') }}"; return null;} try{ const rawKey = base64UrlDecode(k); console.log("Key from session (B64URL Decoded):", arrayBufferToBase64(rawKey)); return rawKey; } catch(e){console.error("Key decode fail:",e);alert("Invalid key. Login.");window.location.href="{{ url_for('login') }}";return null;}}
-        // Ensure encryptData is loaded from crypto-helpers.js
-
-        // --- Theme Toggler ---
+        // *** ADDED THEME HANDLING SCRIPT ***
         const themeToggleBtn = document.getElementById('theme-toggle');
         const sunIcon = themeToggleBtn?.querySelector('.icon-sun');
         const moonIcon = themeToggleBtn?.querySelector('.icon-moon');
-        const currentTheme = localStorage.getItem('theme') || 'light'; // Default to light
+        const userPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const currentTheme = localStorage.getItem('theme') || (userPrefersDark ? 'dark' : 'light');
 
         function applyTheme(theme) {
             document.body.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
-            if (sunIcon && moonIcon) {
-                if (theme === 'dark') {
-                    sunIcon.style.display = 'none';
-                    moonIcon.style.display = 'inline';
-                } else {
-                    sunIcon.style.display = 'inline';
-                    moonIcon.style.display = 'none';
-                }
+             if (sunIcon && moonIcon && themeToggleBtn) { // Add null check for button
+                sunIcon.style.display = theme === 'dark' ? 'none' : 'inline';
+                moonIcon.style.display = theme === 'dark' ? 'inline' : 'none';
+                themeToggleBtn.title = `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`;
             }
         }
-        applyTheme(currentTheme); // Apply initial theme on load
+        applyTheme(currentTheme); // Apply initial theme
+
         if (themeToggleBtn) {
             themeToggleBtn.addEventListener('click', () => {
                 const newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
                 applyTheme(newTheme);
             });
         }
+        // *** END THEME HANDLING SCRIPT ***
+
+        // --- E2EE Helper Functions ---
+        // (Keep these minimal as they should be in crypto-helpers.js)
+        function base64UrlDecode(b64url){ /* ... as before ... */ let b64=b64url.replace(/-/g,'+').replace(/_/g,'/');while(b64.length%4){b64+='=';}return base64ToArrayBuffer(b64); }
+        async function getEncryptionKeyRawBytesFromSession(){ const k=sessionStorage.getItem('encryptionKey'); if(!k){console.error("Key missing.");alert("Key missing. Login.");window.location.href="{{ url_for('login') }}"; return null;} try{ const rawKey = base64UrlDecode(k); /* console.log("Key from session (B64URL Decoded):", arrayBufferToBase64(rawKey)); */ return rawKey; } catch(e){console.error("Key decode fail:",e);alert("Invalid key. Login.");window.location.href="{{ url_for('login') }}";return null;}}
+        // Ensure encryptData, escapeHtml, getStrengthClassFromScore etc. are assumed from loaded scripts
 
         // --- Strength & Breach Meter Helpers ---
-         function getStrengthClassFromScore(score) {
-             const classes = ['very-weak', 'weak', 'medium', 'strong', 'very-strong'];
-             return classes[score] || 'very-weak';
-         }
-         function formatBackendFeedback(feedbackArray) {
-             let html = '<ul>';
-             if (!feedbackArray || feedbackArray.length === 0) {
-                 html += '<li class="suggestion">Analysis complete.</li>';
-             } else {
-                 feedbackArray.forEach(fb => {
-                    let itemClass = 'suggestion'; // Default
-                    if (fb.toLowerCase().includes('warning:') || fb.toLowerCase().includes('issue:')) {
-                        itemClass = 'warning';
-                    }
-                    html += `<li class="${itemClass}">${escapeHtml(fb)}</li>`;
-                 });
-             }
-             html += '</ul>';
-             return html;
-         }
-         // Ensure escapeHtml is loaded from crypto-helpers.js
-
+        function getStrengthClassFromScore(score) { const classes = ['very-weak', 'weak', 'medium', 'strong', 'very-strong']; return classes[score] || 'very-weak'; }
+        function formatBackendFeedback(feedbackArray) { let html = '<ul>'; if (!feedbackArray || feedbackArray.length === 0) { html += '<li class="suggestion">Analysis complete.</li>'; } else { feedbackArray.forEach(fb => { let itemClass = 'suggestion'; if (fb.toLowerCase().includes('warning:') || fb.toLowerCase().includes('issue:')) { itemClass = 'warning'; } html += `<li class="${itemClass}">${escapeHtml(fb)}</li>`; }); } html += '</ul>'; return html; }
 
         // --- DOMContentLoaded Event Listener ---
         document.addEventListener('DOMContentLoaded', function() {
-             // Ensure key is in sessionStorage from Flask session or redirect
+             // Ensure crypto-helpers are loaded
+             if (typeof escapeHtml !== 'function' || typeof encryptData !== 'function' || typeof checkHIBPPassword !== 'function' || typeof zxcvbn !== 'function') {
+                console.error("Essential helper functions not found!");
+                const messageEl = document.getElementById('message');
+                if(messageEl) {
+                    messageEl.textContent = "Error: Required page scripts failed to load. Please refresh.";
+                    messageEl.className = 'message error'; // Use alert style
+                    messageEl.style.display = 'block'; // Ensure it's visible
+                }
+                // Disable form submission
+                const form = document.getElementById('password-form');
+                if (form) form.style.opacity = '0.5'; form.style.pointerEvents = 'none';
+                return; // Stop execution
+             }
+
              const flaskProvidedKey = "{{ session.get('encryption_key', 'null') }}";
              if (flaskProvidedKey && flaskProvidedKey !== 'null' && !sessionStorage.getItem('encryptionKey')) {
                  sessionStorage.setItem('encryptionKey', flaskProvidedKey);
                  console.log("Encryption key loaded into sessionStorage from Flask.");
              } else if (!sessionStorage.getItem('encryptionKey')) {
-                 console.warn("Encryption key missing from Flask session and sessionStorage. Redirecting to login.");
+                 console.warn("Encryption key missing. Redirecting to login.");
                  window.location.href = "{{ url_for('login') }}";
-                 return; // Stop script execution if no key
+                 return;
              }
 
             // --- Get DOM Elements ---
@@ -201,7 +174,6 @@
             const genUppercaseCheckbox = document.getElementById('gen-uppercase');
             const genDigitsCheckbox = document.getElementById('gen-digits');
             const genSymbolsCheckbox = document.getElementById('gen-symbols');
-
             // Strength & Breach Display Elements
             const strengthArea = document.getElementById('password-strength-area');
             const strengthIndicator = document.getElementById('strength-indicator');
@@ -212,246 +184,111 @@
 
             // --- Debounce Function ---
             let debounceTimerStrength;
-            function debounce(func, delay) {
-                return function(...args) {
-                    clearTimeout(debounceTimerStrength);
-                    debounceTimerStrength = setTimeout(() => {
-                        func.apply(this, args);
-                    }, delay);
-                };
-            }
+            function debounce(func, delay) { return function(...args) { clearTimeout(debounceTimerStrength); debounceTimerStrength = setTimeout(() => { func.apply(this, args); }, delay); }; }
 
             // --- Function to Update UI for Both Strength and Breach ---
             async function updatePasswordAnalysisUI(password) {
-                if (!password) {
-                    // Hide strength meter and breach status if password is empty
-                    strengthArea.style.display = 'none';
-                    strengthIndicator.className = 'strength-indicator';
-                    strengthTextLabel.textContent = 'Strength:';
-                    strengthFeedbackDiv.innerHTML = '';
-                    strengthArea.className = 'password-strength-area';
-                    breachStatusArea.style.display = 'none'; // Hide breach area
-                    breachStatusIndicator.textContent = 'Checking...';
-                    breachStatusIndicator.className = 'breach-indicator'; // Reset breach style
-                    return;
-                }
+                if (!password) { strengthArea.style.display = 'none'; breachStatusArea.style.display = 'none'; return; }
 
-                // --- Show elements and indicate loading ---
-                strengthArea.style.display = 'block'; // Show combined area
-                breachStatusArea.style.display = 'flex'; // Show breach area (use flex for alignment)
-                strengthTextLabel.textContent = 'Strength: Checking...';
-                strengthIndicator.className = 'strength-indicator'; // Reset bar
-                strengthFeedbackDiv.innerHTML = '<ul><li>Checking...</li></ul>';
-                strengthArea.className = 'password-strength-area'; // Reset background
-                breachStatusIndicator.textContent = 'Checking...';
-                breachStatusIndicator.className = 'breach-indicator loading'; // Style for loading
+                strengthArea.style.display = 'block'; breachStatusArea.style.display = 'flex';
+                strengthTextLabel.textContent = 'Strength: Checking...'; strengthIndicator.className = 'strength-indicator';
+                strengthFeedbackDiv.innerHTML = '<ul><li>Checking...</li></ul>'; strengthArea.className = 'password-strength-area';
+                breachStatusIndicator.textContent = 'Checking...'; breachStatusIndicator.className = 'breach-indicator loading';
 
-                // --- Perform Checks Concurrently ---
-                const strengthPromise = fetch("{{ url_for('strength_check_api') }}", {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: password })
-                });
-                // Use the FREE HIBP check directly from crypto-helpers.js
-                const breachPromise = checkHIBPPassword(password); // Assumes checkHIBPPassword is loaded
+                const strengthPromise = fetch("{{ url_for('strength_check_api') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: password }) });
+                const breachPromise = checkHIBPPassword(password); // Use helper
 
-                // --- Process Strength Results ---
+                // Process Strength Results
                 try {
                     const response = await strengthPromise;
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }));
-                        throw new Error(errorData.error || `Server error: ${response.status}`);
-                     }
-                    const result = await response.json();
-                    const score = result.score; // Score 0-4
-                    const strengthClass = getStrengthClassFromScore(score);
-                    const assessment = result.assessment || "Unknown";
+                    if (!response.ok) { const errorData = await response.json().catch(() => ({ error: 'Unknown server error' })); throw new Error(errorData.error || `Server error: ${response.status}`); }
+                    const result = await response.json(); const score = result.score; const strengthClass = getStrengthClassFromScore(score); const assessment = result.assessment || "Unknown";
+                    strengthIndicator.className = `strength-indicator ${strengthClass}`; strengthTextLabel.textContent = `Strength: ${assessment}`;
+                    strengthFeedbackDiv.innerHTML = formatBackendFeedback(result.feedback); strengthArea.className = `password-strength-area strength-${score}`;
+                } catch (error) { console.error('Strength Check Error:', error); strengthTextLabel.textContent = 'Strength: Error'; strengthFeedbackDiv.innerHTML = `<ul><li class="warning">Error checking strength: ${escapeHtml(error.message)}</li></ul>`; strengthArea.className = 'password-strength-area strength-0'; }
 
-                    strengthIndicator.className = `strength-indicator ${strengthClass}`;
-                    strengthTextLabel.textContent = `Strength: ${assessment}`;
-                    strengthFeedbackDiv.innerHTML = formatBackendFeedback(result.feedback);
-                    strengthArea.className = `password-strength-area strength-${score}`;
-
-                } catch (error) {
-                    console.error('Strength Check Error:', error);
-                    strengthTextLabel.textContent = 'Strength: Error';
-                    strengthFeedbackDiv.innerHTML = `<ul><li class="warning">Error checking strength: ${escapeHtml(error.message)}</li></ul>`;
-                    strengthArea.className = 'password-strength-area strength-0'; // Show error style
-                }
-
-                // --- Process Breach Results ---
+                // Process Breach Results
                 try {
                     const breachResult = await breachPromise;
-                    if (breachResult.error) {
-                         breachStatusIndicator.textContent = `Error: ${escapeHtml(breachResult.error)}`;
-                         breachStatusIndicator.className = 'breach-indicator error';
-                    } else if (breachResult.isPwned) {
-                         breachStatusIndicator.textContent = `Compromised! Found in ${breachResult.count} breach${breachResult.count > 1 ? 'es' : ''}.`;
-                         breachStatusIndicator.className = 'breach-indicator pwned';
-                    } else {
-                         breachStatusIndicator.textContent = 'Not found in known breaches.';
-                         breachStatusIndicator.className = 'breach-indicator safe';
-                    }
-                } catch (error) { // Should not happen if checkHIBPPassword handles errors, but for safety
-                    console.error("Error processing breach result:", error);
-                    breachStatusIndicator.textContent = 'Error checking breach status.';
-                    breachStatusIndicator.className = 'breach-indicator error';
-                }
+                    if (breachResult.error) { breachStatusIndicator.textContent = `Error: ${escapeHtml(breachResult.error)}`; breachStatusIndicator.className = 'breach-indicator error'; }
+                    else if (breachResult.isPwned) { breachStatusIndicator.textContent = `Compromised! Found in ${breachResult.count} breach${breachResult.count > 1 ? 'es' : ''}.`; breachStatusIndicator.className = 'breach-indicator pwned'; }
+                    else { breachStatusIndicator.textContent = 'Not found in known breaches.'; breachStatusIndicator.className = 'breach-indicator safe'; }
+                } catch (error) { console.error("Error processing breach result:", error); breachStatusIndicator.textContent = 'Error checking breach status.'; breachStatusIndicator.className = 'breach-indicator error'; }
             }
 
             // --- Password Input Listener ---
-            passwordInput.addEventListener('input', debounce(function() {
-                if (typeof checkHIBPPassword === 'function' && typeof zxcvbn === 'function') { // Check helpers are loaded
-                    updatePasswordAnalysisUI(this.value);
-                } else {
-                    console.error("Required analysis functions (checkHIBPPassword or zxcvbn) not found. Ensure scripts are loaded correctly.");
-                    // Basic fallback or visual error indication could go here
-                    strengthTextLabel.textContent = 'Strength: Error';
-                    strengthArea.style.display = 'block';
-                    strengthFeedbackDiv.innerHTML = `<ul><li class="warning">Error: Analysis script missing.</li></ul>`;
-                     breachStatusIndicator.textContent = 'Error: Checker missing.';
-                     breachStatusIndicator.className = 'breach-indicator error';
-                      breachStatusArea.style.display = 'flex';
-                }
-            }, 600)); // Debounce API calls by 600ms
+            if (passwordInput) {
+                passwordInput.addEventListener('input', debounce(function() { updatePasswordAnalysisUI(this.value); }, 600));
+            }
+
+            // --- Toggle Password Visibility ---
+             if (togglePasswordBtn && passwordInput) {
+                 togglePasswordBtn.addEventListener('click', function() { const t=passwordInput.type==='password'?'text':'password'; passwordInput.type=t; this.textContent=t==='password'?'Show':'Hide'; });
+             }
 
 
             // --- Generator Logic ---
-             genLengthSlider.addEventListener('input', function() { genLengthValueSpan.textContent = this.value; });
-             togglePasswordBtn.addEventListener('click', function() { const t=passwordInput.type==='password'?'text':'password'; passwordInput.type=t; this.textContent=t==='password'?'Show':'Hide'; });
-             generatePasswordBtn.addEventListener('click', async function() {
-                 messageEl.textContent = ''; messageEl.className = 'message';
-                 generatePasswordBtn.disabled = true; generatePasswordBtn.textContent = '...';
-                 const options = {
-                     length: parseInt(genLengthSlider.value, 10),
-                     use_lowercase: genLowercaseCheckbox.checked,
-                     use_uppercase: genUppercaseCheckbox.checked,
-                     use_digits: genDigitsCheckbox.checked,
-                     use_symbols: genSymbolsCheckbox.checked
-                 };
-                 try {
-                     // Fetch generated password from backend
-                     const response = await fetch("{{ url_for('generate_password_api') }}", {
-                         method: 'POST',
-                         headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify(options)
-                     });
-                     const result = await response.json();
-                     if (response.ok && result.password) {
-                         passwordInput.value = result.password;
-                         passwordInput.type = 'text'; // Show generated password briefly
-                         togglePasswordBtn.textContent = 'Hide';
-                         // *** Trigger the analysis immediately after generation ***
-                         if (typeof checkHIBPPassword === 'function' && typeof zxcvbn === 'function') {
-                             updatePasswordAnalysisUI(result.password); // Call analysis function
-                         } else {
-                              console.error("Analysis functions not available after generation.");
-                         }
-                         // Hide after a delay
-                         setTimeout(() => {
-                             if (passwordInput.type === 'text') {
-                                 passwordInput.type = 'password';
-                                 togglePasswordBtn.textContent = 'Show';
-                             }
-                         }, 2500); // Show for 2.5 seconds
-                     } else {
-                         throw new Error(result.error || 'Failed to generate password.');
-                     }
-                 } catch (error) {
-                     messageEl.textContent = `Generation Error: ${escapeHtml(error.message)}`;
-                     messageEl.className = 'message error';
-                     console.error('Generate Password Error:', error);
-                 } finally {
-                     generatePasswordBtn.disabled = false;
-                     generatePasswordBtn.textContent = 'Generate';
-                 }
-             });
+             if (genLengthSlider && genLengthValueSpan) {
+                 genLengthSlider.addEventListener('input', function() { genLengthValueSpan.textContent = this.value; });
+             }
+            if (generatePasswordBtn && passwordInput) {
+                generatePasswordBtn.addEventListener('click', async function() {
+                     messageEl.textContent = ''; messageEl.className = 'message';
+                     generatePasswordBtn.disabled = true; generatePasswordBtn.textContent = '...';
+                     const options = { length: parseInt(genLengthSlider.value, 10), use_lowercase: genLowercaseCheckbox.checked, use_uppercase: genUppercaseCheckbox.checked, use_digits: genDigitsCheckbox.checked, use_symbols: genSymbolsCheckbox.checked };
+                     try {
+                         const response = await fetch("{{ url_for('generate_password_api') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(options) });
+                         const result = await response.json();
+                         if (response.ok && result.password) {
+                             passwordInput.value = result.password; passwordInput.type = 'text'; // Show generated
+                             if(togglePasswordBtn) togglePasswordBtn.textContent = 'Hide';
+                             updatePasswordAnalysisUI(result.password); // Trigger analysis immediately
+                             setTimeout(() => { if (passwordInput.type === 'text') { passwordInput.type = 'password'; if(togglePasswordBtn) togglePasswordBtn.textContent = 'Show'; } }, 2500);
+                         } else { throw new Error(result.error || 'Failed to generate password.'); }
+                     } catch (error) { messageEl.textContent = `Generation Error: ${escapeHtml(error.message)}`; messageEl.className = 'message error'; messageEl.style.display = 'block'; console.error('Generate Password Error:', error);
+                     } finally { generatePasswordBtn.disabled = false; generatePasswordBtn.textContent = 'Generate'; }
+                });
+            }
+
 
              // --- Form Submission Logic ---
-             form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                messageEl.textContent = ''; messageEl.className = 'message';
-                submitButton.disabled = true; submitButton.textContent = 'Saving...';
+             if (form && submitButton) {
+                 form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    messageEl.textContent = ''; messageEl.className = 'message'; messageEl.style.display = 'none';
+                    submitButton.disabled = true; submitButton.textContent = 'Saving...';
 
-                const service = document.getElementById('service').value.trim();
-                const username = document.getElementById('username').value.trim();
-                const password = document.getElementById('password').value; // Get password from input
+                    const service = document.getElementById('service').value.trim();
+                    const username = document.getElementById('username').value.trim();
+                    const password = passwordInput.value; // Get password from input
 
-                if (!service || !username || !password) {
-                    messageEl.textContent = 'Service, Username, and Password are required.';
-                    messageEl.className = 'message error';
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Encrypt & Save';
-                    return;
-                }
+                    if (!service || !username || !password) { messageEl.textContent = 'Service, Username, and Password are required.'; messageEl.className = 'message error'; messageEl.style.display = 'block'; submitButton.disabled = false; submitButton.textContent = 'Encrypt & Save'; return; }
 
-                try {
-                    // Get the raw key bytes from session storage
-                    const keyBuffer = await getEncryptionKeyRawBytesFromSession();
-                    if (!keyBuffer) {
-                        // Error handled within getEncryptionKeyRawBytesFromSession (alert/redirect)
-                        submitButton.disabled = false;
-                        submitButton.textContent = 'Encrypt & Save';
-                        return;
-                    }
+                    try {
+                        const keyBuffer = await getEncryptionKeyRawBytesFromSession();
+                        if (!keyBuffer) { submitButton.disabled = false; submitButton.textContent = 'Encrypt & Save'; return; } // Error handled internally
+                        const dataToEncrypt = { service: service, username: username, password: password };
+                        const encryptedB64Data = await encryptData(keyBuffer, dataToEncrypt);
 
-                    // Encrypt the data
-                    const dataToEncrypt = { service: service, username: username, password: password };
-                    const encryptedB64Data = await encryptData(keyBuffer, dataToEncrypt); // Assumes encryptData is loaded
+                        const response = await fetch("{{ url_for('add_credential') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ encrypted_data: encryptedB64Data, service_hint: service }) });
+                        const result = await response.json();
 
-                    // Send to backend
-                    const response = await fetch("{{ url_for('add_credential') }}", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            encrypted_data: encryptedB64Data,
-                            service_hint: service // Use service name as hint
-                        })
-                    });
-                    const result = await response.json();
+                        if (response.ok && result.success) {
+                            messageEl.textContent = 'Credential encrypted and saved successfully!'; messageEl.className = 'message success'; form.reset();
+                            if (passwordInput) passwordInput.type = 'password'; if (togglePasswordBtn) togglePasswordBtn.textContent = 'Show';
+                            // Reset generator options
+                            if (genLengthSlider) genLengthSlider.value = 16; if (genLengthValueSpan) genLengthValueSpan.textContent = '16';
+                            if (genLowercaseCheckbox) genLowercaseCheckbox.checked = true; if (genUppercaseCheckbox) genUppercaseCheckbox.checked = true; if (genDigitsCheckbox) genDigitsCheckbox.checked = true; if (genSymbolsCheckbox) genSymbolsCheckbox.checked = true;
+                            // Reset strength & breach display
+                            if (strengthArea) strengthArea.style.display = 'none'; if (breachStatusArea) breachStatusArea.style.display = 'none';
 
-                    if (response.ok && result.success) {
-                        messageEl.textContent = 'Credential encrypted and saved successfully!';
-                        messageEl.className = 'message success';
-                        form.reset(); // Clear the form
-
-                        // Reset generator options to default
-                        genLengthSlider.value = 16;
-                        genLengthValueSpan.textContent = '16';
-                        genLowercaseCheckbox.checked = true;
-                        genUppercaseCheckbox.checked = true;
-                        genDigitsCheckbox.checked = true;
-                        genSymbolsCheckbox.checked = true;
-                        passwordInput.type = 'password';
-                        togglePasswordBtn.textContent = 'Show';
-
-                        // Reset strength & breach display on successful save
-                        strengthArea.style.display = 'none'; // Hide the whole area
-                        breachStatusArea.style.display = 'none';
-                        strengthIndicator.className = 'strength-indicator';
-                        strengthTextLabel.textContent = 'Strength:';
-                        strengthFeedbackDiv.innerHTML = '';
-                        strengthArea.className = 'password-strength-area';
-                        breachStatusIndicator.textContent = 'Checking...';
-                        breachStatusIndicator.className = 'breach-indicator';
-
-                    } else {
-                        messageEl.textContent = `Error: ${escapeHtml(result.message || 'Failed to save credential.')}`;
-                        messageEl.className = 'message error';
-                    }
-                } catch (error) {
-                    messageEl.textContent = `An error occurred: ${escapeHtml(error.message)}`;
-                    messageEl.className = 'message error';
-                    console.error('Save Credential Error:', error);
-                    // Log specific crypto errors if they occur
-                    if (error.message.includes("encrypt") || error.message.includes("Base64")) {
-                         console.error("Potential encryption or encoding error during save.");
-                    }
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Encrypt & Save';
-                }
-             }); // End form submit listener
+                        } else { messageEl.textContent = `Error: ${escapeHtml(result.message || 'Failed to save credential.')}`; messageEl.className = 'message error'; }
+                    } catch (error) { messageEl.textContent = `An error occurred: ${escapeHtml(error.message)}`; messageEl.className = 'message error'; console.error('Save Credential Error:', error);
+                    } finally { messageEl.style.display = 'block'; submitButton.disabled = false; submitButton.textContent = 'Encrypt & Save'; }
+                 });
+            } else {
+                 console.error("Password form or submit button not found.");
+            }
 
         }); // End DOMContentLoaded
     </script>

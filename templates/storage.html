@@ -6,12 +6,18 @@
     <title>View Passwords - Secure Password Manager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body data-theme="light"> <!-- Default theme set here, JS will override if needed -->
     <div class="container">
         <header>
              <h1>Secure Password Manager</h1>
              {% if current_user.is_authenticated %}
-                 <a href="{{ url_for('logout') }}" class="logout-link">Logout ({{ current_user.email }})</a>
+                 <div class="header-controls">
+                     <a href="{{ url_for('logout') }}" class="logout-link">Logout ({{ current_user.email }})</a>
+                     <button id="theme-toggle" title="Toggle theme">
+                        <span class="icon-sun">☀️</span>
+                        <span class="icon-moon" style="display:none;">🌙</span>
+                    </button>
+                 </div>
              {% endif %}
             <nav>
                 <ul>
@@ -25,11 +31,11 @@
         <main>
             <section class="card">
                 <h2>Stored Credentials</h2>
-                <div class="search-bar">
+                <div class="search-bar form-group">
                     <input type="text" id="search-input" placeholder="Search by Service name (hint)..." title="Search works on the unencrypted service hint">
                 </div>
-                <div class="table-container">
-                    <table id="passwords-table">
+                <div class="table-container storage-table-container">
+                    <table id="passwords-table" class="responsive-table">
                         <thead>
                             <tr>
                                 <th>Service/Website</th>
@@ -39,11 +45,11 @@
                             </tr>
                         </thead>
                         <tbody id="passwords-list">
-                            <!-- Password entries will be populated here by JS -->
+                            <!-- Populated by JS -->
                         </tbody>
                     </table>
                 </div>
-                <div id="status-indicator" class="status-message">Loading credentials...</div>
+                <div id="status-indicator" class="status-message" style="display: none;">Loading credentials...</div>
             </section>
         </main>
 
@@ -53,57 +59,59 @@
     </div>
 
     <script>
-        // --- E2EE Helper Functions (JavaScript using Web Crypto API) ---
-        function base64UrlDecode(b64url) {
-            let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-            while (b64.length % 4) { b64 += '='; }
-            return base64ToArrayBuffer(b64);
-        }
-        async function getEncryptionKeyRawBytes() {
-            const keyB64Url = sessionStorage.getItem('encryptionKey');
-            if (!keyB64Url) {
-                console.error("Key missing"); alert("Key missing. Login again."); window.location.href = "{{ url_for('login') }}"; return null;
-            }
-            try { return base64UrlDecode(keyB64Url); }
-            catch (e) { console.error("Key decode failed:", e); alert("Invalid key. Login again."); window.location.href = "{{ url_for('login') }}"; return null; }
-        }
-        async function decryptData(keyBuffer, encryptedB64Data) {
-            try {
-                const combinedData = base64ToArrayBuffer(encryptedB64Data);
-                if (combinedData.byteLength < 12) throw new Error("Encrypted data too short.");
-                const iv = combinedData.slice(0, 12); const ciphertext = combinedData.slice(12);
-                const cryptoKey = await crypto.subtle.importKey("raw", keyBuffer, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-                const decryptedContent = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, cryptoKey, ciphertext);
-                return JSON.parse(new TextDecoder().decode(decryptedContent));
-            } catch (error) { console.error("Decryption failed:", error); return null; }
-        }
-        function arrayBufferToBase64(buffer) {
-            let binary = ''; const bytes = new Uint8Array(buffer); const len = bytes.byteLength;
-            for (let i = 0; i < len; i++) { binary += String.fromCharCode(bytes[i]); } return window.btoa(binary);
-        }
-        function base64ToArrayBuffer(base64) {
-            try {
-                const binary_string = window.atob(base64); const len = binary_string.length; const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); } return bytes.buffer;
-            } catch (e) { console.error("Base64 decoding failed:", e); throw new Error("Invalid Base64 string"); }
-        }
-        function escapeHtml(unsafe) {
-             // Corrected escaping
-             return unsafe
-                 .replace(/&/g, "&")
-                 .replace(/</g, "<")
-                 .replace(/>/g, ">")
-                 .replace(/"/g, "\"")
-                 .replace(/'/g, "'");
-        }
+        // --- E2EE Helper Functions (Keep these outside DOMContentLoaded as they are just definitions) ---
+        function base64UrlDecode(b64url) { let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/'); while (b64.length % 4) { b64 += '='; } return base64ToArrayBuffer(b64); }
+        async function getEncryptionKeyRawBytes() { const keyB64Url = sessionStorage.getItem('encryptionKey'); if (!keyB64Url) { console.error("Key missing"); alert("Key missing. Login again."); window.location.href = "{{ url_for('login') }}"; return null; } try { return base64UrlDecode(keyB64Url); } catch (e) { console.error("Key decode failed:", e); alert("Invalid key. Login again."); window.location.href = "{{ url_for('login') }}"; return null; } }
+        async function decryptData(keyBuffer, encryptedB64Data) { try { const combinedData = base64ToArrayBuffer(encryptedB64Data); if (combinedData.byteLength < 12) throw new Error("Encrypted data too short."); const iv = combinedData.slice(0, 12); const ciphertext = combinedData.slice(12); const cryptoKey = await crypto.subtle.importKey("raw", keyBuffer, { name: "AES-GCM", length: 256 }, false, ["decrypt"]); const decryptedContent = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, cryptoKey, ciphertext); return JSON.parse(new TextDecoder().decode(decryptedContent)); } catch (error) { console.error("Decryption failed:", error); return null; } }
+        function arrayBufferToBase64(buffer) { let binary = ''; const bytes = new Uint8Array(buffer); const len = bytes.byteLength; for (let i = 0; i < len; i++) { binary += String.fromCharCode(bytes[i]); } return window.btoa(binary); }
+        function base64ToArrayBuffer(base64) { try { const binary_string = window.atob(base64); const len = binary_string.length; const bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); } return bytes.buffer; } catch (e) { console.error("Base64 decoding failed:", e); throw new Error("Invalid Base64 string"); } }
+        function escapeHtml(unsafe) { if (typeof unsafe !== 'string') return ''; return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");}
 
         // --- Main Logic ---
         document.addEventListener('DOMContentLoaded', function() {
-            const flaskProvidedKey = "{{ session.get('encryption_key', 'null') }}";
-             if (flaskProvidedKey && flaskProvidedKey !== 'null' && !sessionStorage.getItem('encryptionKey')) {
-                 sessionStorage.setItem('encryptionKey', flaskProvidedKey);
-             }
 
+             // *** MOVED THEME HANDLING SCRIPT INSIDE DOMContentLoaded ***
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const sunIcon = themeToggleBtn?.querySelector('.icon-sun');
+            const moonIcon = themeToggleBtn?.querySelector('.icon-moon');
+            const userPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const currentTheme = localStorage.getItem('theme') || (userPrefersDark ? 'dark' : 'light');
+
+            // Define applyTheme function HERE
+            function applyTheme(theme) {
+                document.body.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                 if (sunIcon && moonIcon && themeToggleBtn) {
+                    sunIcon.style.display = theme === 'dark' ? 'none' : 'inline';
+                    moonIcon.style.display = theme === 'dark' ? 'inline' : 'none';
+                    themeToggleBtn.title = `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`;
+                }
+            }
+            // Call applyTheme HERE, after it's defined
+            applyTheme(currentTheme);
+
+            // Attach listener HERE
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', () => {
+                    const newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    applyTheme(newTheme);
+                });
+            }
+             // *** END MOVED THEME HANDLING SCRIPT ***
+
+
+             // --- Key Check ---
+             const flaskProvidedKey = "{{ session.get('encryption_key', 'null') }}";
+             if (flaskProvidedKey && flaskProvidedKey !== 'null' && !sessionStorage.getItem('encryptionKey')) {
+                  sessionStorage.setItem('encryptionKey', flaskProvidedKey);
+                  console.log("Key loaded into sessionStorage");
+              } else if (!sessionStorage.getItem('encryptionKey')) {
+                  console.warn("Encryption key missing. Redirecting.");
+                  window.location.href = "{{ url_for('login') }}?next=" + encodeURIComponent(window.location.pathname); // Add redirect target
+                  return; // Stop script execution
+              }
+
+            // --- DOM Elements ---
             const passwordsListBody = document.getElementById('passwords-list');
             const statusIndicator = document.getElementById('status-indicator');
             const searchInput = document.getElementById('search-input');
@@ -111,106 +119,177 @@
             let allCredentialsData = [];
             let encryptionKey = null;
 
+            // --- Initialization ---
             async function initialize() {
                 statusIndicator.textContent = 'Retrieving key...';
+                statusIndicator.style.display = 'block';
                 try {
-                    encryptionKey = await getEncryptionKeyRawBytes();
-                    if (!encryptionKey) { statusIndicator.textContent = 'Key missing. Login.'; statusIndicator.classList.add('error-message'); return; }
-                    fetchAndDisplayCredentials();
-                } catch (error) { statusIndicator.textContent = `Init Error: ${error.message}`; statusIndicator.classList.add('error-message'); }
+                    encryptionKey = await getEncryptionKeyRawBytes(); // Uses sessionStorage key
+                    if (!encryptionKey) {
+                         statusIndicator.textContent = 'Key missing. Login.';
+                         return; // Stop if key failed
+                     }
+                    fetchAndDisplayCredentials(); // Fetch data now that key is confirmed
+                } catch (error) {
+                     statusIndicator.textContent = `Init Error: ${error.message}`;
+                     console.error("Initialization error:", error);
+                     // Maybe redirect to login if key is invalid?
+                     if (error.message.includes("Invalid key")) {
+                         window.location.href = "{{ url_for('login') }}";
+                     }
+                }
             }
 
+            // --- Fetch and Display Credentials ---
             async function fetchAndDisplayCredentials() {
-                statusIndicator.textContent = 'Loading credentials...'; statusIndicator.classList.remove('error-message');
-                passwordsListBody.innerHTML = '';
+                statusIndicator.textContent = 'Loading credentials...';
+                statusIndicator.style.display = 'block';
+                passwordsListBody.innerHTML = ''; // Clear previous list
                 try {
                     const response = await fetch("{{ url_for('get_credentials') }}");
-                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                    if (!response.ok) {
+                         if (response.status === 401) { // Handle unauthorized specifically
+                              console.warn("Unauthorized (401). Redirecting to login.");
+                              window.location.href = "{{ url_for('login') }}?next=" + encodeURIComponent(window.location.pathname);
+                          } else { throw new Error(`HTTP error! Status: ${response.status}`); }
+                          return; // Stop processing if redirecting or error thrown
+                      }
                     const data = await response.json();
                     if (data && Array.isArray(data)) {
-                         allCredentialsData = data; statusIndicator.textContent = '';
-                         if (data.length === 0) { statusIndicator.textContent = 'No credentials stored yet.'; }
-                         else { displayPlaceholders(data); }
+                         allCredentialsData = data;
+                         displayPlaceholders(data); // Render placeholders/data
                     } else { throw new Error("Invalid data received."); }
-                } catch (error) { console.error('Fetch error:', error); statusIndicator.textContent = `Load Error: ${error.message}`; statusIndicator.classList.add('error-message'); }
+                } catch (error) {
+                     console.error('Fetch error:', error);
+                     statusIndicator.textContent = `Load Error: ${error.message}`;
+                     statusIndicator.style.display = 'block';
+                 }
             }
 
+            // --- Display Placeholders (with data-label attributes) ---
             function displayPlaceholders(credentials) {
-                passwordsListBody.innerHTML = ''; statusIndicator.textContent = '';
-                if (credentials.length === 0){ statusIndicator.textContent = 'No credentials match search.'; return; }
+                passwordsListBody.innerHTML = ''; // Clear again before rendering
+                const searchTerm = searchInput ? searchInput.value.trim() : '';
+
+                if (credentials.length === 0){
+                    statusIndicator.textContent = searchTerm ? 'No credentials match search.' : 'No credentials stored yet.';
+                    statusIndicator.style.display = 'block';
+                    // Add a placeholder row in the table for better visual feedback
+                    passwordsListBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-secondary-color);">No credentials found.</td></tr>';
+                    return;
+                 }
+                 // Hide status indicator if we have results
+                 statusIndicator.style.display = 'none';
+
                 credentials.forEach(item => {
                     const row = passwordsListBody.insertRow();
+                    row.dataset.id = item.id; // Add ID to row
+
                     const date = new Date(item.created_at);
-                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const formattedDate = date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                     const serviceDisplay = item.service_hint ? escapeHtml(item.service_hint) : '(Service Hidden)';
                     const usernameDisplay = '(Username Hidden)';
+
                     row.innerHTML = `
-                        <td class="service-cell">${serviceDisplay}</td>
-                        <td class="username-cell">${usernameDisplay}</td>
-                        <td class="password-cell">
-                            <span class="password-hidden" data-encrypted="${item.encrypted_data}" data-id="${item.id}">••••••••</span>
+                        <td data-label="Service/Website" class="service-cell">${serviceDisplay}</td>
+                        <td data-label="Username/Email" class="username-cell">${usernameDisplay}</td>
+                        <td data-label="Password" class="password-cell">
+                            <span class="password-hidden" data-encrypted="${item.encrypted_data}">${/* data-id removed */''}••••••••</span>
                             <button class="toggle-button password-toggle" title="Show/hide password">Show</button>
                         </td>
-                        <td>${formattedDate}</td>
+                        <td data-label="Date Added">${formattedDate}</td>
                     `;
                 });
-                addToggleListeners();
+                addToggleListeners(); // Re-attach listeners after rendering
             }
 
+            // --- Add Toggle Listeners ---
             function addToggleListeners() {
-                document.querySelectorAll('.password-toggle').forEach(button => {
-                    const newButton = button.cloneNode(true); button.parentNode.replaceChild(newButton, button);
-                    newButton.addEventListener('click', handleToggleClick);
-                });
+                // Use event delegation on the table body for potentially better performance
+                passwordsListBody.removeEventListener('click', handleTableClick); // Remove previous listener if any
+                passwordsListBody.addEventListener('click', handleTableClick);
             }
 
-             async function handleToggleClick(event) {
+            // --- Handle Clicks within Table Body (Event Delegation) ---
+            function handleTableClick(event) {
+                if (event.target.classList.contains('password-toggle')) {
+                    handleToggleClick(event.target); // Pass the button element
+                }
+                // Add other delegated listeners here if needed
+            }
+
+
+            // --- Handle Toggle Click (Decryption Logic) ---
+             async function handleToggleClick(button) { // Accept button element directly
                  if (!encryptionKey) { alert("Key not available. Login again."); return; }
-                 const button = event.target;
-                 const passwordSpan = button.previousElementSibling;
-                 const encryptedDataB64 = passwordSpan.dataset.encrypted;
-                 const credentialId = passwordSpan.dataset.id;
                  const row = button.closest('tr');
-                 const serviceCell = row.querySelector('.service-cell');
+                 if (!row) return;
+
+                 const passwordSpan = row.querySelector('.password-cell span');
                  const usernameCell = row.querySelector('.username-cell');
+                 const serviceCell = row.querySelector('.service-cell');
+                 const credentialId = row.dataset.id;
+
+                 if (!passwordSpan || !usernameCell || !serviceCell || !credentialId) { console.error("Could not find necessary elements in row for ID:", credentialId); return; }
+
+                 const encryptedDataB64 = passwordSpan.dataset.encrypted;
                  button.disabled = true;
 
                  if (passwordSpan.classList.contains('password-hidden')) {
                      button.textContent = 'Decrypting...';
-                     const decryptedData = await decryptData(encryptionKey, encryptedDataB64);
-                     if (decryptedData) {
-                         passwordSpan.textContent = escapeHtml(decryptedData.password);
-                         passwordSpan.classList.remove('password-hidden');
-                         serviceCell.textContent = escapeHtml(decryptedData.service);
-                         usernameCell.textContent = escapeHtml(decryptedData.username);
-                         button.textContent = 'Hide';
-                     } else {
+                     try {
+                         const decryptedData = await decryptData(encryptionKey, encryptedDataB64);
+                         if (decryptedData) {
+                             passwordSpan.textContent = escapeHtml(decryptedData.password);
+                             passwordSpan.classList.remove('password-hidden');
+                             passwordSpan.style.color = '';
+                             usernameCell.textContent = escapeHtml(decryptedData.username);
+                             serviceCell.textContent = escapeHtml(decryptedData.service);
+                             button.textContent = 'Hide';
+                         } else {
+                              throw new Error("Decryption returned null"); // Treat null as error
+                          }
+                     } catch (error) {
+                         console.error("Decryption failed for", credentialId, error);
                          passwordSpan.textContent = 'Decrypt Error';
-                         passwordSpan.classList.remove('password-hidden'); passwordSpan.style.color = 'red';
-                         button.textContent = 'Error'; // Keep disabled or allow retry?
+                         passwordSpan.classList.remove('password-hidden');
+                         passwordSpan.style.color = 'var(--danger-color)';
+                         button.textContent = 'Error';
+                         usernameCell.textContent = '(Decryption Failed)';
+                         // Optionally revert service cell too or leave as hint
+                         // const originalCredential = allCredentialsData.find(c => c.id === credentialId);
+                         // serviceCell.textContent = originalCredential?.service_hint ? escapeHtml(originalCredential.service_hint) : '(Service Hidden)';
                      }
                  } else {
                      passwordSpan.textContent = '••••••••';
-                     passwordSpan.classList.add('password-hidden'); passwordSpan.style.color = '';
+                     passwordSpan.classList.add('password-hidden');
+                     passwordSpan.style.color = '';
                      button.textContent = 'Show';
+
+                     // Revert username and service cell content to hint/hidden
                      const originalCredential = allCredentialsData.find(c => c.id === credentialId);
                      const serviceDisplay = originalCredential?.service_hint ? escapeHtml(originalCredential.service_hint) : '(Service Hidden)';
-                     serviceCell.textContent = serviceDisplay; usernameCell.textContent = '(Username Hidden)';
+                     usernameCell.textContent = '(Username Hidden)';
+                     serviceCell.textContent = serviceDisplay;
                  }
                  button.disabled = false;
              }
 
-            searchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase().trim();
-                if (!searchTerm) { displayPlaceholders(allCredentialsData); return; }
-                const filteredCredentials = allCredentialsData.filter(item =>
-                    item.service_hint && item.service_hint.toLowerCase().includes(searchTerm)
-                );
-                displayPlaceholders(filteredCredentials);
-            });
+             // --- Search Input Listener ---
+             if (searchInput) {
+                 searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase().trim();
+                    // Filter directly from the master list
+                    const filteredCredentials = allCredentialsData.filter(item =>
+                        searchTerm ? (item.service_hint && item.service_hint.toLowerCase().includes(searchTerm)) : true
+                    );
+                    displayPlaceholders(filteredCredentials); // Re-render the list
+                });
+             }
 
-            initialize(); // Start
-        });
+            initialize(); // Start the process
+
+        }); // End DOMContentLoaded
     </script>
 </body>
 </html>

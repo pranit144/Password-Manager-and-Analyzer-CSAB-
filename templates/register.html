@@ -5,29 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Secure Password Manager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 400px; margin: 40px auto; padding: 30px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #333; margin-bottom: 25px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 6px; font-weight: 500; color: #555; }
-        input[type="email"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-size: 1rem; }
-        input:focus { border-color: #80bdff; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
-        .btn { display: block; width: 100%; background-color: #28a745; color: white; padding: 12px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: background-color 0.2s ease; }
-        .btn:hover { background-color: #218838; }
-        .alert { padding: 12px 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid transparent; font-size: 0.95rem; }
-        .alert-danger { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
-        .alert-success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
-        .alert-warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
-        .alert-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
-        .text-center { text-align: center; }
-        .mt-3 { margin-top: 1.5rem; }
-        .link { color: #007bff; text-decoration: none; }
-        .link:hover { text-decoration: underline; }
-        .password-rules { font-size: 0.85rem; color: #6c757d; margin-top: -10px; margin-bottom: 15px; }
-  
-    </style>
+    <!-- No inline style block needed -->
 </head>
-<body class="auth-body">
+<body class="auth-body" data-theme="light"> <!-- Added class and default theme -->
     <h2>Create Account</h2>
 
      {% with messages = get_flashed_messages(with_categories=true) %}
@@ -47,19 +27,33 @@
         <div class="form-group">
             <label for="password">Master Password:</label>
             <input type="password" id="password" name="password" required autocomplete="new-password" aria-describedby="passwordHelp">
-            <small id="passwordHelp" class="password-rules">
-                Choose a strong, unique Master Password. You will need this to log in and decrypt your data. <br>
-                **It cannot be recovered if forgotten!**
+            <small id="passwordHelp" class="password-rules"> <!-- Use class for styling -->
+                Choose a strong, unique Master Password. You need this to log in and decrypt your data. <br>
+                <strong>It cannot be recovered if forgotten!</strong>
             </small>
         </div>
          <div class="form-group">
             <label for="confirm_password">Confirm Master Password:</label>
             <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
         </div>
-        <button type="submit" class="btn btn-register">Register</button>
+        <button type="submit" class="btn btn-register">Register</button> <!-- Use specific class -->
     </form>
      <p class="text-center mt-3">
         Already have an account? <a href="{{ url_for('login') }}" class="link">Login here</a>
     </p>
+
+    <!-- Add Theme Handling Script (no toggle button) -->
+    <script>
+        const userPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const currentTheme = localStorage.getItem('theme') || (userPrefersDark ? 'dark' : 'light');
+
+        function applyTheme(theme) {
+            // Target the specific body class
+            const targetElement = document.querySelector('.auth-body') || document.body;
+            targetElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme); // Still save preference globally
+        }
+        applyTheme(currentTheme); // Apply initial theme
+    </script>
 </body>
 </html>
